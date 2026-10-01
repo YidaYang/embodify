@@ -1,0 +1,41 @@
+name: Backend request
+description: Ask for support for a simulator, benchmark or robot.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Tell us about the simulator, benchmark or robot you would like Embodify to support.
+        New backends are welcome as contributions too; see docs/backend-development.md.
+  - type: input
+    id: name
+    attributes:
+      label: Simulator, benchmark or robot
+      placeholder: e.g. RoboTwin, LeRobot SO-101
+    validations:
+      required: true
+  - type: input
+    id: link
+    attributes:
+      label: Link
+      description: Project page, repository or paper.
+  - type: textarea
+    id: embodiment
+    attributes:
+      label: Robot and sensors
+      description: Arms and grippers, mobile base, cameras and other sensors.
+  - type: textarea
+    id: interface
+    attributes:
+      label: Control interface
+      description: How it is controlled (Python API, ROS, vendor SDK), and its action and observation spaces if you know them.
+  - type: textarea
+    id: use
+    attributes:
+      label: What you would use it for
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contributing
+      options:
+        - label: I would like to help implement or test this backend.

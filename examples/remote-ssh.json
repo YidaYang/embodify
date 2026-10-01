@@ -1,0 +1,19 @@
+{
+  "transport": "stdio",
+  "command": [
+    "ssh",
+    "-T",
+    "robot-sim",
+    "/opt/embodify-runtime/bin/python",
+    "-m",
+    "embodify_mcp.backend.serve",
+    "--backend",
+    "robodojo",
+    "--robodojo-config",
+    "/opt/embodify/config/robodojo.local.json"
+  ],
+  "timeout_s": 900,
+  "connect_timeout_s": 120,
+  "heartbeat_timeout_s": 30,
+  "frame_stride": 3
+}

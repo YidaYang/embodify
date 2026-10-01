@@ -1,0 +1,55 @@
+name: Bug report
+description: Something does not work as described.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Leave out secrets, private host names and camera images you cannot share.
+        Report security vulnerabilities privately through the Security tab instead.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: Server command and options, and the tool calls involved if you have them.
+  - type: input
+    id: version
+    attributes:
+      label: Embodify version
+      description: The output of `embodify-mcp --version`.
+    validations:
+      required: true
+  - type: dropdown
+    id: backend
+    attributes:
+      label: Backend
+      options:
+        - fake or fake-two-arm
+        - libero
+        - robodojo
+        - remote
+        - other
+    validations:
+      required: true
+  - type: input
+    id: agent
+    attributes:
+      label: Agent host and model
+      placeholder: e.g. Claude Code with Claude Opus 5.5
+  - type: input
+    id: system
+    attributes:
+      label: Operating system and Python version
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Server stderr, error messages or the relevant lines of events.jsonl.
+      render: text

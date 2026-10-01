@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=61,<76", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "embodify-mcp"
+version = "0.1.0a1"
+description = "Embodify MCP server: robot observation and control tools for the agent you already use"
+readme = "README.md"
+authors = [{name = "Yida Yang"}]
+requires-python = ">=3.8"
+license = {file = "LICENSE"}
+dependencies = ["numpy>=1.24,<3"]
+classifiers = ["Development Status :: 3 - Alpha", "Programming Language :: Python :: 3", "Topic :: Scientific/Engineering :: Artificial Intelligence"]
+
+[project.urls]
+Homepage = "https://github.com/YidaYang/embodify"
+Repository = "https://github.com/YidaYang/embodify"
+Issues = "https://github.com/YidaYang/embodify/issues"
+Changelog = "https://github.com/YidaYang/embodify/blob/main/CHANGELOG.md"
+
+[project.optional-dependencies]
+media = ["Pillow>=10,<13"]
+diagnostics = ["packaging>=23"]
+dev = ["pytest>=7,<10", "build>=1,<2", "twine>=5,<7"]
+
+[project.scripts]
+embodify-mcp = "embodify_mcp.mcp:main"
+embodify-mcp-backend = "embodify_mcp.backend.serve:main"
+embodify-mcp-monitor = "embodify_mcp.monitor:main"
+embodify-mcp-preflight = "embodify_mcp.robodojo.preflight:main"
+embodify-mcp-smoke = "embodify_mcp.smoke:main"
+
+[tool.setuptools]
+license-files = ["LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"]
+
+[tool.setuptools.packages.find]
+include = ["embodify_mcp*"]
+
+[tool.setuptools.package-data]
+embodify_mcp = ["monitor_page.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

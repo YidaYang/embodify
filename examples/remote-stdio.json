@@ -1,0 +1,12 @@
+{
+  "transport": "stdio",
+  "command": [
+    "python",
+    "-m",
+    "embodify_mcp.backend.serve",
+    "--backend",
+    "fake"
+  ],
+  "timeout_s": 120,
+  "heartbeat_timeout_s": 30
+}

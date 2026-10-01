@@ -1,0 +1,1188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Embodify Monitor</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Ccircle cx=%278%27 cy=%278%27 r=%276%27 fill=%27%232563eb%27/%3E%3C/svg%3E">
+<style>
+:root {
+  --bg: #f4f5f7; --panel: #ffffff; --panel-2: #f0f2f5; --line: #dde1e7;
+  --text: #1b1f24; --muted: #667080; --faint: #9aa3af; --accent: #2563eb;
+  --ok: #15803d; --ok-bg: #dcfce7; --bad: #b91c1c; --bad-bg: #fee2e2; --warn: #b45309; --warn-bg: #fef3c7;
+  --c-reset: #16a34a; --c-move: #2563eb; --c-grip: #d97706; --c-observe: #64748b;
+  --c-stop: #dc2626; --c-info: #7c3aed; --c-pending: #94a3b8;
+  --x: #e11d48; --y: #16a34a; --z: #2563eb; --g: #d97706;
+  --mono: ui-monospace, "Cascadia Mono", Consolas, "SFMono-Regular", Menlo, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", "Microsoft YaHei UI", "PingFang SC", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1116; --panel: #161b22; --panel-2: #1c222b; --line: #2a313c;
+    --text: #e6e9ee; --muted: #9aa4b2; --faint: #6b7482; --accent: #60a5fa;
+    --ok: #4ade80; --ok-bg: #12301f; --bad: #f87171; --bad-bg: #3a1618; --warn: #fbbf24; --warn-bg: #3a2c0c;
+    --c-reset: #22c55e; --c-move: #3b82f6; --c-grip: #f59e0b; --c-observe: #7c8799;
+    --c-stop: #ef4444; --c-info: #a78bfa; --c-pending: #4b5563;
+    --x: #fb7185; --y: #4ade80; --z: #60a5fa; --g: #fbbf24;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1116; --panel: #161b22; --panel-2: #1c222b; --line: #2a313c;
+  --text: #e6e9ee; --muted: #9aa4b2; --faint: #6b7482; --accent: #60a5fa;
+  --ok: #4ade80; --ok-bg: #12301f; --bad: #f87171; --bad-bg: #3a1618; --warn: #fbbf24; --warn-bg: #3a2c0c;
+  --c-reset: #22c55e; --c-move: #3b82f6; --c-grip: #f59e0b; --c-observe: #7c8799;
+  --c-stop: #ef4444; --c-info: #a78bfa; --c-pending: #4b5563;
+  --x: #fb7185; --y: #4ade80; --z: #60a5fa; --g: #fbbf24;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--text); font: 13px/1.45 var(--sans); }
+button, select { font: inherit; color: inherit; }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+.app { display: grid; grid-template-columns: 290px minmax(0, 1fr) 380px; height: 100vh; }
+.col { min-height: 0; overflow: auto; }
+.side { border-right: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; }
+.right { border-left: 1px solid var(--line); background: var(--panel); }
+.main { padding: 14px 16px 24px; }
+
+/* ---- sidebar: run list ---- */
+.brand { padding: 14px 14px 10px; border-bottom: 1px solid var(--line); }
+.brand h1 { margin: 0; font-size: 15px; letter-spacing: .2px; }
+.brand .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.btn.lang { min-width: 0; padding: 1px 8px; font-size: 12px; }
+.brand .root { color: var(--faint); font-size: 11px; margin-top: 2px; word-break: break-all; }
+.brand label { display: flex; gap: 6px; align-items: center; margin-top: 8px; color: var(--muted); cursor: pointer; }
+.runs { overflow: auto; flex: 1; padding: 6px 0 16px; }
+.group { padding: 10px 14px 4px; color: var(--faint); font-size: 11px; text-transform: uppercase; letter-spacing: .6px; }
+.run { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 8px 14px; cursor: pointer; border-left: 3px solid transparent; }
+.run:hover { background: var(--panel-2); }
+.run.on { background: var(--panel-2); border-left-color: var(--accent); }
+.run .l1 { display: flex; gap: 6px; align-items: baseline; }
+.run .rid { font-weight: 600; }
+.run .meta { color: var(--muted); font-size: 12px; }
+.run .instr { color: var(--text); opacity: .85; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 2px 0 3px; }
+.run .l3 { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+.empty { padding: 20px 14px; color: var(--muted); }
+.empty code { font-family: var(--mono); background: var(--panel-2); padding: 1px 4px; border-radius: 3px; }
+
+.badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 1px 6px; border-radius: 999px; background: var(--panel-2); color: var(--muted); border: 1px solid var(--line); white-space: nowrap; }
+.badge.ok { background: var(--ok-bg); color: var(--ok); border-color: transparent; }
+.badge.bad { background: var(--bad-bg); color: var(--bad); border-color: transparent; }
+.badge.warn { background: var(--warn-bg); color: var(--warn); border-color: transparent; }
+.badge.live { color: var(--accent); border-color: var(--accent); }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; display: inline-block; }
+.live .dot { animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .25; } }
+
+/* ---- main area ---- */
+.head h2 { margin: 0 0 4px; font-size: 17px; font-weight: 600; }
+.head .sub { color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.cams { display: grid; grid-template-columns: repeat(var(--camera-count, 2), minmax(0, 1fr)); gap: 12px; margin: 14px 0 10px; }
+.cam { min-width: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+/* Frame labels alternate in length during strided replay; two fixed rows keep wrapping from moving the video and the scroll anchor. */
+.cam .cap { display: grid; grid-template-rows: 18px 18px; padding: 6px 10px; color: var(--muted); font-size: 12px; line-height: 18px; border-bottom: 1px solid var(--line); }
+.cam .cap > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cam .cap .lab { text-align: right; }
+.cam .frame { aspect-ratio: 1 / 1; background: #000; position: relative; }
+.cam img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.cam .miss { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; color: #8b95a3; }
+.cam.missing img { visibility: hidden; } .cam.missing .miss { display: flex; }
+
+.transport { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.btn { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 4px 9px; cursor: pointer; min-width: 32px; }
+.btn:hover { border-color: var(--faint); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; min-width: 64px; }
+.btn.on { color: var(--accent); border-color: var(--accent); }
+.btn:disabled { opacity: .4; cursor: default; }
+.transport .pos { margin-left: auto; color: var(--muted); }
+.sep { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
+select { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; }
+
+.strip-wrap { position: relative; margin-top: 10px; }
+canvas { display: block; width: 100%; }
+#strip { height: 44px; cursor: pointer; border-radius: 6px; }
+#chart { height: 190px; cursor: pointer; margin-top: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+.tip { position: absolute; pointer-events: none; background: var(--text); color: var(--bg); padding: 3px 7px; border-radius: 4px; font-size: 12px; white-space: nowrap; transform: translate(-50%, -100%); top: -4px; display: none; z-index: 5; }
+.legend { display: flex; gap: 12px; flex-wrap: wrap; color: var(--muted); font-size: 12px; margin-top: 8px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+.keys { color: var(--faint); font-size: 11.5px; margin-top: 10px; }
+.keys kbd { font-family: var(--mono); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 3px; padding: 0 4px; background: var(--panel); }
+
+/* ---- right column ---- */
+.sec { padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.sec h3 { margin: 0 0 8px; font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: .4px; display: flex; justify-content: space-between; align-items: center; }
+.kv { display: grid; grid-template-columns: 76px 1fr; gap: 4px 10px; align-items: baseline; }
+.kv .k { color: var(--muted); }
+.xyz { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.xyz span b { font-weight: 500; margin-right: 3px; }
+.bar { height: 5px; background: var(--panel-2); border-radius: 3px; overflow: hidden; margin-top: 3px; }
+.bar > div { height: 100%; background: var(--accent); }
+details summary { cursor: pointer; color: var(--muted); }
+pre { font-family: var(--mono); font-size: 11.5px; background: var(--panel-2); padding: 8px; border-radius: 6px; overflow: auto; max-height: 280px; margin: 6px 0 0; white-space: pre-wrap; word-break: break-word; }
+.call-name { font-family: var(--mono); font-weight: 600; font-size: 13.5px; }
+.chip { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
+/* The call log scrolls on its own. On narrow screens the right column sits below the video and scrolls with
+   the page; if highlighting scrolled the page, every new call during playback would drag the page down and hide
+   the video, so auto-positioning may only move this box. */
+.logbox { position: relative; max-height: 60vh; overflow: auto; overscroll-behavior: contain; border-top: 1px solid var(--line); }
+.log { list-style: none; margin: 0; padding: 0; }
+.log li { display: grid; grid-template-columns: 34px 1fr auto; gap: 6px; padding: 5px 14px; cursor: pointer; border-left: 3px solid transparent; align-items: baseline; }
+.log li:hover { background: var(--panel-2); }
+.log li.on { background: var(--panel-2); border-left-color: var(--accent); }
+.log .n { color: var(--faint); font-family: var(--mono); font-size: 11px; }
+.log .what { font-family: var(--mono); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.log .res { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.log .res.err { color: var(--bad); }
+.note { color: var(--faint); font-size: 11.5px; margin-top: 6px; }
+.arm-h { font-weight: 600; font-size: 12px; margin: 8px 0 4px; color: var(--muted); }
+#st-arms .kv { margin-top: 4px; }
+.banner { display: none; background: var(--warn-bg); color: var(--warn); padding: 6px 10px; border-radius: 6px; margin-bottom: 10px; }
+.placeholder { color: var(--muted); padding: 60px 0; text-align: center; }
+
+@media (max-width: 1280px) {
+  .app { grid-template-columns: 260px minmax(0, 1fr); }
+  .right { grid-column: 2; border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+  .app { height: auto; min-height: 100vh; }
+  .col { overflow: visible; }
+  .side { position: sticky; top: 0; height: 100vh; overflow: auto; }
+}
+@media (max-width: 760px) {
+  .app { grid-template-columns: 1fr; }
+  .right { grid-column: 1; }
+  .side { position: static; height: auto; max-height: 40vh; border-right: 0; border-bottom: 1px solid var(--line); }
+  .main { padding: 12px 16px; }
+  .cams { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="col side">
+    <div class="brand">
+      <div class="top"><h1 data-i18n="title">Embodify Monitor</h1><button class="btn lang" id="b-lang" type="button" data-i18n="switchLang" data-i18n-title="switchLangTitle" title="切换到中文">中文</button></div>
+      <div class="root" id="root"></div>
+      <label><input type="checkbox" id="autoswitch" checked> <span data-i18n="autoswitch">Switch to new episodes automatically</span></label>
+    </div>
+    <div class="runs" id="runs"></div>
+  </aside>
+
+  <main class="col main">
+    <div class="banner" id="banner"></div>
+    <div id="nothing" class="placeholder" data-i18n="pickEpisode">Pick an episode on the left.</div>
+    <div id="view" hidden>
+      <div class="head">
+        <h2 id="instr"></h2>
+        <div class="sub" id="sub"></div>
+      </div>
+
+      <div class="cams" id="cams"></div>
+
+      <div class="transport">
+        <button class="btn" id="b-first" data-i18n-title="first" title="First frame (Home)">⏮</button>
+        <button class="btn" id="b-pcall" data-i18n-title="prevCall" title="Previous call ([)">⇤</button>
+        <button class="btn" id="b-prev" data-i18n-title="prevFrame" title="Previous frame (←)">◀</button>
+        <button class="btn primary" id="b-play" data-i18n-title="playTitle" title="Play / pause (Space)">▶ Play</button>
+        <button class="btn" id="b-next" data-i18n-title="nextFrame" title="Next frame (→)">▶</button>
+        <button class="btn" id="b-ncall" data-i18n-title="nextCall" title="Next call (])">⇥</button>
+        <button class="btn" id="b-last" data-i18n-title="last" title="Last frame (End)">⏭</button>
+        <span class="sep"></span>
+        <select id="fps" data-i18n-title="speed" title="Playback speed">
+          <option value="5">5 fps</option>
+          <option value="10">10 fps</option>
+          <option value="20" selected>20 fps (simulation speed)</option>
+          <option value="40">40 fps</option>
+          <option value="80">80 fps</option>
+        </select>
+        <button class="btn" id="b-live" data-i18n-title="liveTitle" title="Back to live (L)" hidden><span class="dot"></span> <span data-i18n="live">Live</span></button>
+        <span class="pos num" id="pos"></span>
+      </div>
+
+      <div class="strip-wrap">
+        <canvas id="strip"></canvas>
+        <div class="tip" id="tip"></div>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--c-reset)"></i>reset_task</span>
+        <span><i style="background:var(--c-move)"></i>move_relative</span>
+        <span><i style="background:var(--c-grip)"></i>set_gripper</span>
+        <span><i style="background:var(--c-observe)"></i>observe</span>
+        <span><i style="background:var(--c-info)"></i><span data-i18n="legendQueries">queries</span></span>
+        <span><i style="background:var(--c-stop)"></i><span data-i18n="legendStop">stop / error</span></span>
+        <span><i style="background:var(--c-pending)"></i><span data-i18n="callRunning">running</span></span>
+        <span id="legend-success" hidden><i style="background:var(--ok)"></i><span data-i18n="legendSolved">task first solved</span></span>
+      </div>
+
+      <canvas id="chart"></canvas>
+      <div class="keys" data-i18n-html="keysHint">
+        <kbd>Space</kbd> play/pause · <kbd>←</kbd><kbd>→</kbd> step frames · <kbd>Shift</kbd>+arrow jump 10 frames ·
+        <kbd>[</kbd><kbd>]</kbd> jump by call · <kbd>L</kbd> back to live · click the timeline or the chart to jump
+      </div>
+    </div>
+  </main>
+
+  <aside class="col right" id="right" hidden>
+    <div class="sec">
+      <h3><span data-i18n="robotState">Robot state</span> <span class="num" id="st-label"></span></h3>
+      <div class="kv">
+        <span class="k" data-i18n="step">Step</span>
+        <div><span class="num" id="st-step"></span><div class="bar"><div id="st-bar"></div></div></div>
+      </div>
+      <div id="st-arms"></div>
+      <div class="kv" style="margin-top:4px">
+        <span class="k" data-i18n="time">Time</span>
+        <div class="num" id="st-time"></div>
+        <span class="k" data-i18n="taskResult">Task result</span>
+        <div id="st-success"></div>
+      </div>
+      <div class="note" data-i18n="taskResultNote">The task result comes from the backend's own success check (BDDL predicates in LIBERO). It is written to the logs for people only; the Agent never gets it in any tool result.</div>
+    </div>
+
+    <div class="sec">
+      <h3 data-i18n="currentCall">Current call</h3>
+      <div id="call-detail"></div>
+    </div>
+
+    <div class="sec">
+      <details id="env">
+        <summary data-i18n="envParams">Environment and control parameters</summary>
+        <div class="kv" id="env-kv" style="margin-top:8px"></div>
+      </details>
+    </div>
+
+    <div class="calls">
+      <div class="sec" style="border-bottom:0; padding-bottom:4px"><h3><span data-i18n="agentCalls">Agent tool calls</span> <span class="num" id="n-calls"></span></h3></div>
+      <div class="logbox" id="logbox"><ul class="log" id="log"></ul></div>
+    </div>
+  </aside>
+</div>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+// Runs recorded without a camera list come from LIBERO, which has these two.
+function defaultCams() {
+  return [
+    { name: "agentview", label: tr("camAgentview") },
+    { name: "robot0_eye_in_hand", label: tr("camWrist") },
+  ];
+}
+// Chinese labels for the cameras of the built-in backends; other cameras keep the label their run recorded.
+const CAM_LABELS_ZH = {
+  agentview: "第三人称 · agentview", robot0_eye_in_hand: "腕部相机 · eye in hand",
+  cam_head: "头部相机 · cam_head", cam_left_wrist: "左腕相机 · cam_left_wrist", cam_right_wrist: "右腕相机 · cam_right_wrist",
+};
+function camLabel(c) { return (LANG === "zh" && CAM_LABELS_ZH[c.name]) || c.label || c.name; }
+function camsOf(run) { return (run && run.scene && Array.isArray(run.scene.cameras) && run.scene.cameras.length) ? run.scene.cameras : defaultCams(); }
+// Single-arm state is flat (eef_pos_m / eef_rpy_rad / gripper); with several arms it sits under arms, keyed by arm name.
+function armsOf(state) {
+  if (state && state.arms && typeof state.arms === "object" && !Array.isArray(state.arms))
+    return Object.keys(state.arms).map((k) => ({ name: k, st: state.arms[k] || {} }));
+  return [{ name: null, st: state || {} }];
+}
+function armState(state, name) {
+  const hit = armsOf(state).find((a) => a.name === name);
+  return hit ? hit.st : {};
+}
+const LIVE_IDLE_S = 600;        // unfinished and written to within this many seconds counts as running
+const POLL_MS = 500;
+const LIST_MS = 3000;
+
+const S = {
+  runs: [], run: null, cursor: 0, playing: false, fps: 20, follow: true,
+  pollTimer: null, lastTick: 0, acc: 0, seenRunIds: null, token: 0,
+  // The call clicked in the call log. Query and failed calls produce no frames, so the call owning the current frame could never select them.
+  picked: null,
+};
+
+// ---------- language ----------
+// English or Chinese. The browser language picks the default; the switch in the sidebar overrides it.
+const I18N = {
+  en: {
+    title: "Embodify Monitor", switchLang: "中文", switchLangTitle: "切换到中文",
+    autoswitch: "Switch to new episodes automatically", pickEpisode: "Pick an episode on the left.",
+    first: "First frame (Home)", prevCall: "Previous call ([)", prevFrame: "Previous frame (←)",
+    playTitle: "Play / pause (Space)", play: "▶ Play", pause: "⏸ Pause",
+    nextFrame: "Next frame (→)", nextCall: "Next call (])", last: "Last frame (End)",
+    speed: "Playback speed", fps: "{0} fps", fpsSim: "{0} fps (simulation speed)", liveTitle: "Back to live (L)", live: "Live",
+    legendQueries: "queries", legendStop: "stop / error", legendSolved: "task first solved",
+    keysHint: "<kbd>Space</kbd> play/pause · <kbd>←</kbd><kbd>→</kbd> step frames · <kbd>Shift</kbd>+arrow jump 10 frames · " +
+      "<kbd>[</kbd><kbd>]</kbd> jump by call · <kbd>L</kbd> back to live · click the timeline or the chart to jump",
+    robotState: "Robot state", step: "Step", time: "Time", taskResult: "Task result",
+    taskResultNote: "The task result comes from the backend's own success check (BDDL predicates in LIBERO). It is written to the logs for people only; the Agent never gets it in any tool result.",
+    currentCall: "Current call", envParams: "Environment and control parameters", agentCalls: "Agent tool calls",
+    camAgentview: "Third person · agentview", camWrist: "Wrist camera · eye in hand",
+    rot: "rot", defaultScene: "default scene", allSuites: "all suites", error: "error", steps: ["{0} step", "{0} steps"], frames: ["{0} frame", "{0} frames"],
+    bannerList: "Cannot reach the monitor service ({0}); retrying shortly.",
+    bannerEvents: "Reading events failed ({0}); retrying shortly.", bannerOpen: "Cannot open this episode: {0}",
+    noEpisodes: "No episodes yet.<br><br>Every <code>reset_task</code> creates one in the server's output directory, and it appears here automatically.",
+    session: "Session {0}", oldFormat: "{0} (old format)",
+    episodeRunning: "running", callRunning: "running", finished: "finished", unfinished: "unfinished",
+    unfinishedTitle: "The Agent did not call stop_episode, or the MCP process ended early",
+    success: "✓ success", failed: "✗ failed", unknown: "result unknown",
+    unknownTitle: "The simulator could not answer, or the run predates success records", noScene: "(no scene info)",
+    sceneLine: "{0} · task #{1} · layout {2}", aborted: "aborted · {0}", disconnected: "disconnected",
+    finishedSteps: ["finished · {0} step", "finished · {0} steps"], evaluatorOnly: "Evaluator-side result, hidden from the Agent",
+    successAt: "✓ success (step {0}{1})", undoneAtEnd: ", no longer true at the end", solvedAt: "✓ solved at step {0}",
+    unreadable: ["{0} unreadable log line", "{0} unreadable log lines"], noImage: "No image for this frame", frameOf: "frame {0} / {1}",
+    noFrames: "no frames yet", keptByStride: "{0} (kept by striding)", commandClose: "command close", commandOpen: "command open",
+    arm: "{0} arm", position: "Position", fromStart: "From start", orientation: "Orientation", gripper: "Gripper",
+    opening: "opening {0} mm", solvedAtStep: "solved at step {0}", notSolved: "not solved yet",
+    solvedLater: " solved later, at step {0}", simCannotAnswer: "simulator could not answer", oldNoRecord: "old format, no record",
+    noFramesYet: "No frames yet.", pendingNote: "The call has not returned yet; its arguments and result are logged when it ends.",
+    result: "Result", stepsExecuted: "Steps executed", displacement: "Displacement", remaining: "Remaining to target",
+    openingChange: "Opening", simSteps: "Steps", callFrames: "Frames",
+    noCallFrames: "none (the view stays where the call happened)", roundTrip: "Backend round trip (incl. execution)",
+    transfer: "Backend transfer", duration: "Duration", thinking: "Agent thinking",
+    thinkingNote: " (from the previous result to this call)", agentResult: "Result the Agent received (without images)",
+    legacyNote: "Old-format run without per-call records: this call was inferred from frame labels{0}.",
+    legacyEvents: " and mcp_move/mcp_gripper events", callN: "call {0}",
+    task: "Task", initialLayout: "Initial layout", chosenBy: "Scene chosen by", byServer: "server (locked)", byAgent: "Agent or default",
+    backend: "Backend", arms: "Arms", cameras: "Cameras", stepBudget: "Step budget", perCallCap: "Per-call cap",
+    maxTranslation: "Max step translation", maxRotation: "Max step rotation", tolerance: "Arrival tolerance",
+    stall: "Stall criterion", stallRule: "< {0} mm over {1} steps", verified: "Constants verified", yes: "yes", no: "no",
+    mcpSession: "MCP session", listSep: ", ", nCalls: "{0}", runningFrames: ["running · {0} frame", "running · {0} frames"], noCalls: "No calls yet.",
+    laneGripper: "gripper",
+  },
+  zh: {
+    title: "Embodify 运行监控", switchLang: "English", switchLangTitle: "Switch to English",
+    autoswitch: "有新 episode 时自动切过去", pickEpisode: "左边选一个 episode。",
+    first: "第一帧 (Home)", prevCall: "上一次调用 ([)", prevFrame: "上一帧 (←)",
+    playTitle: "播放 / 暂停 (空格)", play: "▶ 播放", pause: "⏸ 暂停",
+    nextFrame: "下一帧 (→)", nextCall: "下一次调用 (])", last: "最后一帧 (End)",
+    speed: "回放速度", fps: "{0} 帧/秒", fpsSim: "{0} 帧/秒（仿真实速）", liveTitle: "回到实时画面 (L)", live: "实时",
+    legendQueries: "查询类", legendStop: "stop / 出错", legendSolved: "任务第一次达成",
+    keysHint: "<kbd>空格</kbd> 播放/暂停 · <kbd>←</kbd><kbd>→</kbd> 逐帧 · <kbd>Shift</kbd>+方向 跳 10 帧 · " +
+      "<kbd>[</kbd><kbd>]</kbd> 按调用跳 · <kbd>L</kbd> 回到实时 · 点进度条或曲线直接跳",
+    robotState: "机械臂状态", step: "仿真步", time: "时间", taskResult: "任务判定",
+    taskResultNote: "「任务判定」来自后端自己的成败检查（LIBERO 是 BDDL 谓词），只写在日志里给人看；Agent 在任何工具返回里都拿不到它。",
+    currentCall: "当前调用", envParams: "仿真环境与控制参数", agentCalls: "Agent 的调用记录",
+    camAgentview: "第三人称 · agentview", camWrist: "腕部相机 · eye in hand",
+    rot: "转", defaultScene: "默认场景", allSuites: "全部 suite", error: "出错", steps: "{0} 步", frames: "{0} 帧",
+    bannerList: "连不上监控服务（{0}），稍后自动重试。",
+    bannerEvents: "读取事件失败（{0}），稍后自动重试。", bannerOpen: "打不开这个 episode：{0}",
+    noEpisodes: "还没有任何 episode。<br><br>MCP server 每次 <code>reset_task</code> 都会在输出目录下新建一个，出现后这里会自动列出来。",
+    session: "会话 {0}", oldFormat: "{0}（旧格式）",
+    episodeRunning: "进行中", callRunning: "执行中", finished: "已结束", unfinished: "未收尾",
+    unfinishedTitle: "Agent 没调 stop_episode，或者 MCP 进程中途没了",
+    success: "✓ 成功", failed: "✗ 未成功", unknown: "判定未知",
+    unknownTitle: "仿真器答不上来，或者是加成功记录之前的旧 run", noScene: "（没有场景信息）",
+    sceneLine: "{0} · 任务 #{1} · 初始摆放 {2}", aborted: "已中止 · {0}", disconnected: "连接断开",
+    finishedSteps: "已结束 · {0} 步", evaluatorOnly: "评估侧判定，Agent 看不到",
+    successAt: "✓ 成功（第 {0} 步{1}）", undoneAtEnd: "，但结束时又不成立了", solvedAt: "✓ 第 {0} 步已达成",
+    unreadable: "{0} 行日志读不了", noImage: "这一帧没有图", frameOf: "帧 {0} / {1}",
+    noFrames: "还没有帧", keptByStride: "{0}（抽帧保留）", commandClose: "指令 close", commandOpen: "指令 open",
+    arm: "{0} 臂", position: "末端位置", fromStart: "相对起点", orientation: "末端姿态", gripper: "夹爪",
+    opening: "开口 {0} mm", solvedAtStep: "第 {0} 步已达成", notSolved: "尚未达成",
+    solvedLater: " 将在第 {0} 步达成", simCannotAnswer: "仿真器答不上来", oldNoRecord: "旧格式，无记录",
+    noFramesYet: "还没有帧。", pendingNote: "调用还没返回，参数和结果要等它结束才写进日志。",
+    result: "结果", stepsExecuted: "执行步数", displacement: "实际位移", remaining: "离目标还差",
+    openingChange: "开口变化", simSteps: "仿真步", callFrames: "这次的帧",
+    noCallFrames: "没有产生帧（画面停在它发生时）", roundTrip: "后端往返（含执行）",
+    transfer: "后端传输", duration: "耗时", thinking: "Agent 思考",
+    thinkingNote: "（上次返回到这次发起）", agentResult: "Agent 收到的返回（不含图片）",
+    legacyNote: "旧格式的 run：没有逐次调用记录，这次调用是从帧名{0}反推出来的。",
+    legacyEvents: "和 mcp_move/mcp_gripper 事件", callN: "第 {0} 次调用",
+    task: "任务", initialLayout: "初始摆放", chosenBy: "场景来源", byServer: "server 钉死", byAgent: "Agent 选或默认",
+    backend: "后端", arms: "臂", cameras: "相机", stepBudget: "步数预算", perCallCap: "单次上限",
+    maxTranslation: "单步位移", maxRotation: "单步转角", tolerance: "到位容差",
+    stall: "卡住判据", stallRule: "{1} 步合计 < {0} mm", verified: "常数已核实", yes: "是", no: "否",
+    mcpSession: "MCP 会话", listSep: "、", nCalls: "{0} 次", runningFrames: "执行中 · {0} 帧", noCalls: "还没有调用。",
+    laneGripper: "夹爪开口",
+  },
+};
+let LANG = "en";
+function tr(key, ...args) {
+  const table = I18N[LANG] || I18N.en;
+  let text = table[key] != null ? table[key] : I18N.en[key] != null ? I18N.en[key] : key;
+  if (Array.isArray(text)) text = text[Number(args[0]) === 1 ? 0 : 1];  // English singular and plural
+  return text.replace(/\{(\d+)\}/g, (_, i) => String(args[+i]));
+}
+function initialLang() {
+  try {
+    const saved = localStorage.getItem("embodify-monitor-lang");
+    if (saved === "en" || saved === "zh") return saved;
+  } catch (e) { /* storage can be unavailable; fall back to the browser language */ }
+  return /^zh\b/i.test(navigator.language || "") ? "zh" : "en";
+}
+
+// ---------- helpers ----------
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function fmt(v, d) { return v == null || !isFinite(v) ? "—" : (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(d); }
+function mm(v) { return fmt(v * 1000, 1); }
+function deg(v) { return v == null ? "—" : fmt(v * 180 / Math.PI, 1) + "°"; }
+function dur(s) {
+  if (s == null || !isFinite(s)) return "—";
+  const m = Math.floor(s / 60), r = s - m * 60;
+  return (m ? m + ":" + String(r.toFixed(1)).padStart(4, "0") : r.toFixed(1) + " s");
+}
+function clock(t) {
+  const d = new Date(t * 1000), p = (n) => String(n).padStart(2, "0");
+  return `${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+function colorOf(call) {
+  if (!call) return css("--c-pending");
+  if (call.ok === false) return css("--c-stop");
+  return css({ reset_task: "--c-reset", move_relative: "--c-move", set_gripper: "--c-grip", observe: "--c-observe",
+               stop_episode: "--c-stop" }[call.name] || "--c-info");
+}
+function guessName(label) {
+  if (label === "reset") return "reset_task";
+  if (label.startsWith("move_")) return "move_relative";
+  if (label.startsWith("gripper_")) return "set_gripper";
+  if (label.startsWith("observe_")) return "observe";
+  return "?";
+}
+function isLive(run) { return !run.finished && run.idle_s != null && run.idle_s < LIVE_IDLE_S; }
+
+// A call's arguments as one readable line
+function argText(call) {
+  const a = call.args || {};
+  const armp = a.arm ? a.arm + " · " : "";
+  if (call.name === "move_relative") {
+    const d = a.delta_xyz || [], r = a.delta_rpy || [];
+    let s = armp + "Δ(" + d.map((v) => (v * 1000).toFixed(0)).join(", ") + ") mm";
+    if (r.some((v) => Math.abs(v) > 1e-9)) s += " · " + tr("rot") + "(" + r.map((v) => (v * 180 / Math.PI).toFixed(1)).join(", ") + ")°";
+    return s;
+  }
+  if (call.name === "set_gripper") return armp + (a.state || "");
+  if (call.name === "reset_task") {
+    const bits = [];
+    if (a.suite != null) bits.push(a.suite);
+    if (a.task_index != null) bits.push("#" + a.task_index);
+    if (a.init_state_index != null) bits.push("init " + a.init_state_index);
+    return bits.join(" ") || tr("defaultScene");
+  }
+  if (call.name === "list_tasks") return a.suite || tr("allSuites");
+  const keys = Object.keys(a);
+  return keys.length ? JSON.stringify(a) : "";
+}
+function resultText(call) {
+  if (call.ok === false) return call.error || tr("error");
+  const d = call.detail || call.result || {};
+  const act = (call.result && call.result.action) || d;
+  if (call.name === "move_relative" && act.stop_reason) return `${act.stop_reason} · ${tr("steps", act.executed_steps)}`;
+  if (call.name === "set_gripper" && act.stop_reason) return `${act.stop_reason} · ${tr("steps", act.executed_steps)}`;
+  return call.frames.length ? tr("frames", call.frames.length) : "";
+}
+
+// ---------- events -> frames and calls ----------
+function newRun(meta) {
+  return { id: meta.id, meta, offset: 0, frames: [], calls: [], pending: [], pendingDetail: null,
+           scene: null, params: null, manifest: null, summary: null, success: null, successUnavailable: null,
+           finished: false, newFormat: false, t0: null, idle_s: meta.idle_s, unreadable: 0 };
+}
+
+function closeCall(run, call) {
+  call.i = run.calls.length;
+  call.frames = run.pending;
+  call.anchor = call.frames.length ? call.frames[0] : Math.max(0, run.frames.length - 1);
+  for (const f of call.frames) run.frames[f].call = call.i;
+  run.pending = [];
+  run.calls.push(call);
+}
+
+function ingest(run, ev) {
+  switch (ev.kind) {
+    case "controller_params": run.params = ev; break;
+    case "scene":
+      run.scene = ev;
+      // Only runs with a session field have tool_call events; for older runs, calls are inferred from frame labels and mcp_move.
+      run.newFormat = "session" in ev;
+      break;
+    case "observation": {
+      const previous = run.frames[run.frames.length - 1];
+      const imageLabel = ev.image_cameras && !ev.image_cameras.length && previous ? previous.imageLabel : ev.label;
+      const f = { i: run.frames.length, imageLabel, label: ev.label, step: ev.step, t: ev.t, state: ev.state || {}, call: null };
+      run.frames.push(f);
+      run.pending.push(f.i);
+      if (run.t0 == null) run.t0 = ev.t;
+      if (!run.newFormat) {
+        if (ev.label === "reset") closeCall(run, { name: "reset_task", args: {}, ok: true, t: ev.t, legacy: true });
+        else if (ev.label.startsWith("observe_")) closeCall(run, { name: "observe", args: {}, ok: true, t: ev.t, legacy: true });
+      }
+      break;
+    }
+    case "mcp_move":
+    case "mcp_gripper":
+      if (run.newFormat) { run.pendingDetail = ev; break; }
+      closeCall(run, ev.kind === "mcp_move"
+        ? { name: "move_relative", args: { delta_xyz: ev.delta_xyz, delta_rpy: ev.delta_rpy }, ok: true, t: ev.t, detail: ev, legacy: true }
+        : { name: "set_gripper", args: { state: ev.state }, ok: true, t: ev.t, detail: ev, legacy: true });
+      break;
+    case "tool_call":
+      closeCall(run, { name: ev.name, args: ev.arguments || {}, ok: ev.ok, error: ev.error, result: ev.result,
+                       stepFrom: ev.step_from, stepTo: ev.step_to, t: ev.t, started: ev.started_at, dur: ev.duration_s,
+                       detail: run.pendingDetail, transport: ev.transport || [] });
+      run.pendingDetail = null;
+      break;
+    case "success": run.success = { step: ev.step, frame: run.frames.length - 1, t: ev.t }; break;
+    case "success_unavailable": run.successUnavailable = ev.error; break;
+    case "finish": run.finished = true; break;
+    case "unreadable": run.unreadable++; break;
+  }
+}
+
+// ---------- network ----------
+async function getJSON(url) {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error(res.status + " " + url);
+  return res.json();
+}
+function banner(msg) { const b = $("banner"); b.textContent = msg || ""; b.style.display = msg ? "block" : "none"; }
+
+async function refreshList() {
+  try {
+    const data = await getJSON("/api/runs");
+    $("root").textContent = data.root;
+    S.runs = data.runs;
+    banner("");
+    const ids = new Set(S.runs.map((r) => r.id));
+    // Auto-switch only to episodes that appeared after this page was opened, so opening the page does not jump away
+    if (S.seenRunIds && $("autoswitch").checked) {
+      const fresh = S.runs.find((r) => !S.seenRunIds.has(r.id) && !r.finished);
+      if (fresh && (!S.run || S.run.id !== fresh.id)) { S.seenRunIds = ids; renderList(); return openRun(fresh.id, null); }
+    }
+    S.seenRunIds = ids;
+    if (S.run) {
+      const m = S.runs.find((r) => r.id === S.run.id);
+      if (m) S.run.idle_s = m.idle_s;
+    }
+    renderList();
+  } catch (e) {
+    banner(tr("bannerList", e.message));
+  }
+}
+
+async function pull(run, token) {
+  // Keep fetching until done: the offset counts bytes, and the server returns only complete lines
+  for (let guard = 0; guard < 50; guard++) {
+    const data = await getJSON(`/api/run/${run.id}/events?offset=${run.offset}`);
+    if (token !== S.token) return false;
+    if (data.manifest) run.manifest = data.manifest;
+    if (data.summary) run.summary = data.summary;
+    for (const ev of data.events) ingest(run, ev);
+    const moved = data.offset !== run.offset;
+    run.offset = data.offset;
+    if (!moved || data.offset >= data.size) break;
+  }
+  if (run.summary) run.finished = true;
+  return true;
+}
+
+async function poll() {
+  const run = S.run, token = S.token;
+  if (!run) return;
+  const before = run.frames.length, callsBefore = run.calls.length;
+  try {
+    if (!(await pull(run, token))) return;
+  } catch (e) {
+    banner(tr("bannerEvents", e.message));
+  }
+  if (token !== S.token) return;
+  if (S.follow && run.frames.length > before) S.cursor = run.frames.length - 1;
+  if (run.frames.length !== before || run.calls.length !== callsBefore) { renderLog(); drawChartCache(); }
+  renderAll();
+  if (!run.finished) S.pollTimer = setTimeout(poll, POLL_MS);
+}
+
+async function openRun(id, frame) {
+  clearTimeout(S.pollTimer);
+  S.token++;
+  const token = S.token;
+  const meta = S.runs.find((r) => r.id === id) || { id };
+  const run = newRun(meta);
+  S.run = run;
+  S.picked = null;
+  logFollow = true;
+  $("logbox").scrollTop = 0;
+  pause();
+  $("nothing").hidden = true; $("view").hidden = false; $("right").hidden = false;
+  renderList();
+  try { await pull(run, token); } catch (e) { banner(tr("bannerOpen", e.message)); return; }
+  if (token !== S.token) return;
+  const last = Math.max(0, run.frames.length - 1);
+  // A running episode follows the latest frame by default; a finished one starts from the beginning
+  S.follow = frame == null && !run.finished;
+  S.cursor = frame != null ? Math.min(Math.max(0, frame), last) : (run.finished ? 0 : last);
+  renderLog(); drawChartCache(); renderAll();
+  if (!run.finished) S.pollTimer = setTimeout(poll, POLL_MS);
+}
+
+// ---------- rendering: run list ----------
+function renderList() {
+  const box = $("runs");
+  if (!S.runs.length) {
+    box.innerHTML = `<div class="empty">${tr("noEpisodes")}</div>`;
+    return;
+  }
+  const groups = new Map();
+  for (const r of S.runs) {
+    const key = r.session ? tr("session", r.session.replace(/^(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})$/, "$2-$3 $4:$5")) : tr("oldFormat", r.stamp.slice(0, 4) + "-" + r.stamp.slice(4, 6) + "-" + r.stamp.slice(6, 8));
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(r);
+  }
+  let html = "";
+  for (const [key, runs] of groups) {
+    html += `<div class="group">${esc(key)}</div>`;
+    for (const r of runs) {
+      const live = !r.finished && r.idle_s < LIVE_IDLE_S;
+      const status = live ? `<span class="badge live"><span class="dot"></span>${tr("episodeRunning")}</span>`
+        : r.finished ? `<span class="badge">${tr("finished")}</span>` : `<span class="badge warn" title="${esc(tr("unfinishedTitle"))}">${tr("unfinished")}</span>`;
+      const verdict = r.success === true ? `<span class="badge ok">${tr("success")}</span>`
+        : r.success === false ? `<span class="badge bad">${tr("failed")}</span>`
+        : r.finished ? `<span class="badge" title="${esc(tr("unknownTitle"))}">${tr("unknown")}</span>` : "";
+      const task = (r.backend && r.backend !== "libero" ? r.backend + " · " : "") + (r.suite ? `${r.suite} #${r.task_index} · init ${r.init_state_index}` : "");
+      html += `<button class="run${S.run && S.run.id === r.id ? " on" : ""}" data-id="${esc(r.id)}">
+        <div class="l1"><span class="rid">${esc(r.run)}</span><span class="meta">${esc(task)}</span></div>
+        <div class="instr" title="${esc(r.instruction || r.name || "")}">${esc(r.instruction || (r.name || "").replace(/_/g, " ") || tr("noScene"))}</div>
+        <div class="l3">${status}${verdict}${r.steps != null ? `<span class="meta num">${tr("steps", r.steps)}</span>` : ""}<span class="meta num" style="margin-left:auto">${esc(clock(r.started_at))}</span></div>
+      </button>`;
+    }
+  }
+  box.innerHTML = html;
+}
+$("runs").addEventListener("click", (e) => {
+  const b = e.target.closest(".run");
+  if (b) openRun(b.dataset.id, null);
+});
+
+// ---------- rendering: frames ----------
+const preloaded = new Map();
+function frameURL(run, f, cam) { return `/api/run/${run.id}/frame/${encodeURIComponent(f.imageLabel || f.label)}/${cam}`; }
+function preload(run, from, n) {
+  for (let i = from; i < Math.min(run.frames.length, from + n); i++) {
+    for (const cam of camsOf(run)) {
+      const u = frameURL(run, run.frames[i], cam.name);
+      if (preloaded.has(u)) continue;
+      const img = new Image(); img.src = u; preloaded.set(u, img);
+      if (preloaded.size > 600) preloaded.delete(preloaded.keys().next().value);
+    }
+  }
+}
+
+function renderAll() {
+  const run = S.run;
+  if (!run) return;
+  const f = run.frames[S.cursor];
+  renderHead(run);
+  renderFrame(run, f);
+  renderState(run, f);
+  renderCall(run, f);
+  renderEnv(run);
+  drawStrip();
+  drawChart();
+  highlightLog(S.picked != null ? S.picked : f ? f.call : null);
+  syncHash();
+}
+
+function renderHead(run) {
+  const sc = run.scene || {};
+  $("instr").textContent = sc.instruction || (sc.name || "").replace(/_/g, " ") || run.id;
+  const live = isLive(run);
+  const bits = [];
+  bits.push(`<span class="num">${esc(run.id)}</span>`);
+  if (sc.suite) bits.push(tr("sceneLine", esc(sc.suite), sc.task_index, sc.init_state_index));
+  if (run.t0) bits.push(`<span class="num">${esc(clock(run.t0))}</span>`);
+  bits.push(live ? `<span class="badge live"><span class="dot"></span>${tr("episodeRunning")}</span>`
+    : run.summary && run.summary.status === "aborted" ? `<span class="badge bad">${tr("aborted", esc(run.summary.reason || tr("disconnected")))}</span>`
+    : run.finished ? `<span class="badge">${tr("finishedSteps", run.summary ? run.summary.steps : "?")}</span>`
+    : `<span class="badge warn">${tr("unfinished")}</span>`);
+  const s = run.summary;
+  if (s && s.success === true) bits.push(`<span class="badge ok" title="${esc(tr("evaluatorOnly"))}">${tr("successAt", s.success_at_step, s.success_at_stop === false ? tr("undoneAtEnd") : "")}</span>`);
+  else if (s && s.success === false) bits.push(`<span class="badge bad" title="${esc(tr("evaluatorOnly"))}">${tr("failed")}</span>`);
+  else if (!s && run.success) bits.push(`<span class="badge ok">${tr("solvedAt", run.success.step)}</span>`);
+  if (run.unreadable) bits.push(`<span class="badge warn">${tr("unreadable", run.unreadable)}</span>`);
+  $("sub").innerHTML = bits.join('<span style="color:var(--faint)">·</span>');
+  $("b-live").hidden = run.finished;
+  $("b-live").classList.toggle("on", S.follow);
+  $("legend-success").hidden = !run.success;
+}
+
+// Camera tiles follow the cameras the run recorded: two for LIBERO, three for RoboDojo. Rebuild only when the
+// camera set changes; rebuilding <img> on every frame would flicker.
+let camsKey = "";
+function buildCams(run) {
+  const cams = camsOf(run), key = cams.map((c) => c.name).join("|");
+  if (key === camsKey) return;
+  camsKey = key;
+  const box = $("cams");
+  box.style.setProperty("--camera-count", cams.length >= 3 ? 3 : 2);
+  box.innerHTML = cams.map((c) => `<div class="cam" data-cam="${esc(c.name)}">
+      <div class="cap"><span title="${esc(camLabel(c))}">${esc(camLabel(c))}</span><span class="num lab"></span></div>
+      <div class="frame"><img alt="${esc(c.name)}"><div class="miss">${tr("noImage")}</div></div>
+    </div>`).join("");
+}
+function renderFrame(run, f) {
+  const n = run.frames.length;
+  $("pos").textContent = n ? tr("frameOf", S.cursor + 1, n) : tr("noFrames");
+  buildCams(run);
+  for (const box of $("cams").querySelectorAll(".cam")) {
+    const img = box.querySelector("img");
+    const label = box.querySelector(".lab");
+    label.textContent = f ? (f.imageLabel !== f.label ? tr("keptByStride", f.imageLabel) : f.label) : "";
+    label.title = label.textContent;
+    if (!f) { box.classList.add("missing"); continue; }
+    const u = frameURL(run, f, box.dataset.cam);
+    if (img.dataset.src !== u) {
+      img.dataset.src = u;
+      img.onload = () => box.classList.remove("missing");
+      img.onerror = () => box.classList.add("missing");
+      img.src = u;
+    }
+  }
+  if (f) preload(run, S.cursor + 1, S.playing ? 40 : 8);
+  ["b-first", "b-prev", "b-pcall"].forEach((id) => ($(id).disabled = S.cursor <= 0));
+  ["b-last", "b-next", "b-ncall"].forEach((id) => ($(id).disabled = S.cursor >= n - 1));
+  $("b-play").textContent = S.playing ? tr("pause") : tr("play");
+}
+
+function renderState(run, f) {
+  if (!f) { ["st-label", "st-step", "st-time", "st-success"].forEach((id) => ($(id).textContent = "")); $("st-arms").innerHTML = ""; return; }
+  const max = run.params ? run.params.max_steps : null;
+  $("st-label").textContent = f.label;
+  $("st-step").textContent = max ? `${f.step} / ${max}` : String(f.step);
+  $("st-bar").style.width = max ? Math.min(100, (100 * f.step) / max) + "%" : "0";
+  const ax = (name, color, v) => `<span><b style="color:var(${color})">${name}</b>${v}</span>`;
+  const first = run.frames[0].state;
+  $("st-arms").innerHTML = armsOf(f.state).map((arm) => {
+    const p = arm.st.eef_pos_m || [], r = arm.st.eef_rpy_rad || {}, g = arm.st.gripper || {};
+    const p0 = armState(first, arm.name).eef_pos_m || p;
+    const cmd = g.command === "close" ? `<span class="badge warn">${tr("commandClose")}</span>` : `<span class="badge">${tr("commandOpen")}</span>`;
+    return (arm.name ? `<div class="arm-h">${esc(tr("arm", arm.name))}</div>` : "") + `<div class="kv">
+      <span class="k">${tr("position")}</span><div class="xyz num">${ax("x", "--x", p[0] != null ? p[0].toFixed(4) : "—") + ax("y", "--y", p[1] != null ? p[1].toFixed(4) : "—") + ax("z", "--z", p[2] != null ? p[2].toFixed(4) : "—")}</div>
+      <span class="k">${tr("fromStart")}</span><div class="xyz num">${ax("x", "--x", mm(p[0] - p0[0])) + ax("y", "--y", mm(p[1] - p0[1])) + ax("z", "--z", mm(p[2] - p0[2]))}</div>
+      <span class="k">${tr("orientation")}</span><div class="xyz num">${ax("r", "--x", deg(r.roll_x)) + ax("p", "--y", deg(r.pitch_y)) + ax("y", "--z", deg(r.yaw_z))}</div>
+      <span class="k">${tr("gripper")}</span><div>${cmd} <span class="num">${tr("opening", g.opening_m != null ? (g.opening_m * 1000).toFixed(1) : "—")}</span></div>
+    </div>`;
+  }).join("");
+  $("st-time").textContent = `t+${dur(f.t - run.t0)}  ·  ${clock(f.t)}`;
+  let verdict;
+  if (run.success) verdict = f.i >= run.success.frame ? `<span class="badge ok">${tr("solvedAtStep", run.success.step)}</span>` : `<span class="badge">${tr("notSolved")}</span><span class="note num">${tr("solvedLater", run.success.step)}</span>`;
+  else if (run.successUnavailable) verdict = `<span class="badge warn" title="${esc(run.successUnavailable)}">${tr("simCannotAnswer")}</span>`;
+  else if (!run.newFormat && !run.summary) verdict = `<span class="badge">${tr("oldNoRecord")}</span>`;
+  else verdict = `<span class="badge">${tr("notSolved")}</span>`;
+  $("st-success").innerHTML = verdict;
+}
+
+function kvRows(rows) { return rows.filter((r) => r[1] != null && r[1] !== "").map(([k, v]) => `<span class="k">${esc(k)}</span><div class="num">${v}</div>`).join(""); }
+
+function renderCall(run, f) {
+  const box = $("call-detail");
+  if (!f) { box.innerHTML = `<div class="note">${tr("noFramesYet")}</div>`; return; }
+  if (f.call == null) {
+    box.innerHTML = `<div><span class="chip" style="background:${colorOf(null)}"></span><span class="call-name">${esc(guessName(f.label))}</span> <span class="badge live"><span class="dot"></span>${tr("callRunning")}</span></div>
+      <div class="note">${tr("pendingNote")}</div>`;
+    return;
+  }
+  const c = run.calls[S.picked != null ? S.picked : f.call];
+  const act = (c.result && c.result.action) || c.detail || {};
+  const rows = [];
+  rows.push([tr("result"), c.ok === false ? `<span class="badge bad">${esc(c.error || tr("error"))}</span> ${esc((c.result || {}).message || "")}` : (act.stop_reason ? `<span class="badge">${esc(act.stop_reason)}</span>` : `<span class="badge ok">ok</span>`)]);
+  if (act.executed_steps != null) rows.push([tr("stepsExecuted"), act.executed_steps]);
+  if (act.achieved_delta_xyz) rows.push([tr("displacement"), act.achieved_delta_xyz.map((v) => (v * 1000).toFixed(1)).join(", ") + " mm"]);
+  if (act.remaining_distance_m != null) rows.push([tr("remaining"), (act.remaining_distance_m * 1000).toFixed(1) + " mm"]);
+  if (act.opening_before_m != null) rows.push([tr("openingChange"), `${(act.opening_before_m * 1000).toFixed(1)} → ${(act.opening_after_m * 1000).toFixed(1)} mm`]);
+  if (c.stepFrom != null) rows.push([tr("simSteps"), c.stepFrom === c.stepTo ? c.stepFrom : `${c.stepFrom} → ${c.stepTo}`]);
+  rows.push([tr("callFrames"), !c.frames.length ? tr("noCallFrames") : c.frames.includes(f.i) ? `${c.frames.indexOf(f.i) + 1} / ${c.frames.length}` : tr("frames", c.frames.length)]);
+  if (c.transport && c.transport.length) {
+    rows.push([tr("roundTrip"), dur(c.transport.reduce((s, x) => s + x.roundtrip_s, 0))]);
+    rows.push([tr("transfer"), (c.transport.reduce((s, x) => s + x.received_bytes + x.sent_bytes, 0) / 1024).toFixed(1) + " KiB"]);
+  }
+  if (c.dur != null) rows.push([tr("duration"), dur(c.dur)]);
+  const prev = c.i > 0 ? run.calls[c.i - 1] : null;
+  if (c.started != null && prev && prev.t != null) rows.push([tr("thinking"), dur(c.started - prev.t) + `<span class="note">${tr("thinkingNote")}</span>`]);
+  let raw = "";
+  if (c.result) raw = `<details style="margin-top:8px"><summary>${tr("agentResult")}</summary><pre>${esc(JSON.stringify(c.result, null, 2))}</pre></details>`;
+  else if (c.legacy) raw = `<div class="note">${tr("legacyNote", c.detail ? tr("legacyEvents") : "")}</div>`;
+  box.innerHTML = `<div><span class="chip" style="background:${colorOf(c)}"></span><span class="call-name">${esc(c.name)}</span>
+      <span class="num" style="color:var(--muted)"> ${esc(argText(c))}</span> <span class="note num">${tr("callN", c.i + 1)}</span></div>
+    <div class="kv" style="margin-top:8px">${kvRows(rows)}</div>${raw}`;
+}
+
+let envKey = "";
+function renderEnv(run) {
+  const key = run.id + (run.params ? 1 : 0) + (run.scene ? 1 : 0) + (run.manifest ? 1 : 0);
+  if (key === envKey) return;
+  envKey = key;
+  const p = run.params || {}, sc = run.scene || {}, m = run.manifest || {};
+  $("env-kv").innerHTML = kvRows([
+    ["suite", esc(sc.suite)], [tr("task"), sc.task_index != null ? `#${sc.task_index} ${esc(sc.name || "")}` : ""],
+    [tr("initialLayout"), sc.init_state_index], [tr("chosenBy"), sc.chosen_by === "server" ? tr("byServer") : sc.chosen_by ? tr("byAgent") : ""],
+    [tr("backend"), esc(sc.backend || m.sim)], [tr("arms"), Array.isArray(sc.arms) ? esc(sc.arms.join(tr("listSep"))) : ""],
+    [tr("cameras"), esc(camsOf(run).map((c) => c.name).join(tr("listSep")))], [tr("stepBudget"), p.max_steps], [tr("perCallCap"), p.max_steps_per_call != null ? tr("steps", p.max_steps_per_call) : ""],
+    [tr("maxTranslation"), p.max_position_delta_m != null ? (p.max_position_delta_m * 1000).toFixed(0) + " mm" : ""],
+    [tr("maxRotation"), p.max_rotation_delta_rad != null ? p.max_rotation_delta_rad + " rad" : ""],
+    [tr("tolerance"), p.position_tolerance_m != null ? `${(p.position_tolerance_m * 1000).toFixed(0)} mm / ${p.rotation_tolerance_rad} rad` : ""],
+    [tr("stall"), p.stall_window != null ? tr("stallRule", (p.stall_epsilon_m * 1000).toFixed(1), p.stall_window) : ""],
+    [tr("verified"), p.verified_against_facts == null ? "" : p.verified_against_facts ? tr("yes") : tr("no")],
+    [tr("mcpSession"), esc(sc.session)],
+  ]);
+}
+
+// ---------- call log ----------
+// List all existing calls at once; when live, only append new ones at the end, so existing rows and the box's scroll position stay put.
+function callRow(run, c) {
+  const t = c.t != null && run.t0 != null ? "t+" + dur(c.t - run.t0) : "";
+  const li = document.createElement("li");
+  li.dataset.i = c.i;
+  li.title = c.name + " " + argText(c) + (t ? "  ·  " + t : "");
+  li.innerHTML = `<span class="n">${c.i + 1}</span>
+    <span class="what"><span class="chip" style="background:${colorOf(c)}"></span>${esc(c.name)} <span style="color:var(--muted)">${esc(argText(c))}</span></span>
+    <span class="res${c.ok === false ? " err" : ""}">${esc(resultText(c))}</span>`;
+  return li;
+}
+function renderLog(rebuild) {
+  const run = S.run, ul = $("log");
+  $("n-calls").textContent = run ? tr("nCalls", run.calls.length) : "";
+  if (!run) { ul.innerHTML = ""; return; }
+  if (rebuild || ul._run !== run) {
+    ul.innerHTML = "";
+    ul._run = run;
+    ul._n = 0;
+    lastHi = undefined;
+  }
+  const old = ul.querySelector("li.pending, li.none");
+  if (old) old.remove();
+  const frag = document.createDocumentFragment();
+  for (; ul._n < run.calls.length; ul._n++) frag.appendChild(callRow(run, run.calls[ul._n]));
+  if (run.pending.length) {
+    const f = run.frames[run.pending[0]], li = document.createElement("li");
+    li.className = "pending";
+    li.innerHTML = `<span class="n">…</span><span class="what"><span class="chip" style="background:${colorOf(null)}"></span>${esc(guessName(f.label))}</span><span class="res">${tr("runningFrames", run.pending.length)}</span>`;
+    frag.appendChild(li);
+    if (lastHi === null) lastHi = undefined;  // the running row is new, so the highlight must be reattached
+  } else if (!run.calls.length) {
+    const li = document.createElement("li");
+    li.className = "none";
+    li.innerHTML = `<span></span><span class="note">${tr("noCalls")}</span>`;
+    frag.appendChild(li);
+  }
+  ul.appendChild(frag);
+}
+
+// The box auto-positions only while you follow along: a visible highlighted row is kept visible; once you scroll
+// the box elsewhere to browse, it stays put until you scroll the highlighted row back into view or click a row.
+let lastHi = undefined, logFollow = true;
+function rowVisible(box, li) {
+  return li.offsetTop >= box.scrollTop && li.offsetTop + li.offsetHeight <= box.scrollTop + box.clientHeight;
+}
+$("logbox").addEventListener("scroll", () => {
+  const on = $("log").querySelector("li.on");
+  logFollow = !on || rowVisible($("logbox"), on);
+});
+function highlightLog(i) {
+  if (i === lastHi) return;
+  lastHi = i;
+  const box = $("logbox");
+  // Check right away whether the old highlighted row is still visible instead of waiting for the scroll event,
+  // which arrives a frame later. If the old row is gone (the running row became the real call), keep the last decision.
+  const prev = $("log").querySelector("li.on");
+  if (prev) logFollow = rowVisible(box, prev);
+  for (const li of $("log").querySelectorAll("li.on")) li.classList.remove("on");
+  const li = i != null ? $("log").querySelector(`li[data-i="${i}"]`) : $("log").querySelector("li.pending");
+  if (!li) return;
+  li.classList.add("on");
+  // Only change this box's scrollTop: scrollIntoView would scroll the whole page too and push the video off screen.
+  if (logFollow && !rowVisible(box, li)) box.scrollTop = Math.max(0, li.offsetTop - box.clientHeight / 3);
+}
+$("log").addEventListener("click", (e) => {
+  const li = e.target.closest("li[data-i]");
+  if (!li) return;
+  pause(); S.follow = false;
+  seek(S.run.calls[+li.dataset.i].anchor);
+  S.picked = +li.dataset.i;
+  renderAll();
+});
+
+// ---------- canvas: timeline ----------
+function sizeCanvas(cv) {
+  const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr));
+  if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; return true; }
+  return false;
+}
+function xOf(i, n, w) { return n <= 1 ? w / 2 : (i / (n - 1)) * w; }
+
+function drawStrip() {
+  const cv = $("strip"), run = S.run;
+  sizeCanvas(cv);
+  const ctx = cv.getContext("2d"), W = cv.width, H = cv.height, dpr = window.devicePixelRatio || 1;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = css("--panel-2"); ctx.fillRect(0, 0, W, H);
+  if (!run || !run.frames.length) return;
+  const n = run.frames.length, top = 12 * dpr, bh = H - top - 4 * dpr;
+  const bw = Math.max(1, W / n);
+  // Color the frames by the call they belong to, one segment per run of frames from the same call.
+  let i = 0;
+  while (i < n) {
+    const c = run.frames[i].call;
+    let j = i;
+    while (j + 1 < n && run.frames[j + 1].call === c) j++;
+    ctx.fillStyle = colorOf(c == null ? null : run.calls[c]);
+    const x0 = (i / n) * W, x1 = ((j + 1) / n) * W;
+    ctx.fillRect(x0, top, Math.max(1, x1 - x0 - (x1 - x0 > 3 * dpr ? dpr : 0)), bh);
+    i = j + 1;
+  }
+  // Calls without frames (queries, errors): small ticks along the top
+  for (const c of run.calls) {
+    if (c.frames.length) continue;
+    ctx.fillStyle = colorOf(c);
+    const x = ((c.anchor + 1) / n) * W;
+    ctx.fillRect(x - dpr, 2 * dpr, 2 * dpr, 8 * dpr);
+  }
+  if (run.success) {
+    const x = ((run.success.frame + 0.5) / n) * W;
+    ctx.fillStyle = css("--ok");
+    ctx.fillRect(x - dpr, 0, 2 * dpr, H);
+    ctx.beginPath(); ctx.moveTo(x + dpr, 0); ctx.lineTo(x + 9 * dpr, 4 * dpr); ctx.lineTo(x + dpr, 8 * dpr); ctx.fill();
+  }
+  const cx = ((S.cursor + 0.5) / n) * W;
+  ctx.fillStyle = css("--text");
+  ctx.fillRect(cx - dpr, 0, 2 * dpr, H);
+}
+
+function frameAtX(cv, clientX) {
+  const r = cv.getBoundingClientRect(), n = S.run ? S.run.frames.length : 0;
+  if (!n) return 0;
+  return Math.min(n - 1, Math.max(0, Math.floor(((clientX - r.left) / r.width) * n)));
+}
+function bindScrub(cv, onHover) {
+  let down = false;
+  cv.addEventListener("pointerdown", (e) => { down = true; cv.setPointerCapture(e.pointerId); seek(frameAtX(cv, e.clientX)); });
+  cv.addEventListener("pointermove", (e) => { if (down) seek(frameAtX(cv, e.clientX)); if (onHover) onHover(e); });
+  cv.addEventListener("pointerup", () => (down = false));
+  cv.addEventListener("pointerleave", () => { if (onHover) $("tip").style.display = "none"; });
+}
+bindScrub($("strip"), (e) => {
+  const run = S.run; if (!run || !run.frames.length) return;
+  const i = frameAtX($("strip"), e.clientX), f = run.frames[i], c = f.call != null ? run.calls[f.call] : null;
+  const tip = $("tip"), r = $("strip").getBoundingClientRect();
+  tip.textContent = `${f.label} · ${c ? c.name + " " + argText(c) : tr("callRunning")}`;
+  tip.style.left = (e.clientX - r.left) + "px";
+  tip.style.display = "block";
+});
+
+// ---------- canvas: chart ----------
+// Each lane is normalized on its own: x/y swing by decimeters, z hovers around 0.7 m and the opening spans a few
+// centimeters, so one shared axis would flatten them. Four lanes per arm; with several arms, lanes carry the arm name.
+function lanesOf(run) {
+  const arms = run.frames.length ? armsOf(run.frames[0].state) : [{ name: null }];
+  const out = [];
+  for (const arm of arms) {
+    const pre = arm.name ? arm.name + " " : "", pick = (s) => armState(s, arm.name);
+    out.push(
+      { key: pre + "x", color: "--x", get: (s) => (pick(s).eef_pos_m || [])[0], unit: (v) => v.toFixed(3) + " m" },
+      { key: pre + "y", color: "--y", get: (s) => (pick(s).eef_pos_m || [])[1], unit: (v) => v.toFixed(3) + " m" },
+      { key: pre + "z", color: "--z", get: (s) => (pick(s).eef_pos_m || [])[2], unit: (v) => v.toFixed(3) + " m" },
+      { key: pre + tr("laneGripper"), color: "--g", get: (s) => (pick(s).gripper || {}).opening_m, unit: (v) => (v * 1000).toFixed(1) + " mm" },
+    );
+  }
+  return out;
+}
+let chartCache = null;
+function drawChartCache() {
+  const cv = $("chart"), run = S.run;
+  const LANES = run ? lanesOf(run) : [];
+  // Four lanes for one arm fit in 190px; more lanes add 44px each so the labels do not crowd.
+  const want = Math.max(190, LANES.length * 44) + "px";
+  if (cv.style.height !== want) cv.style.height = want;
+  sizeCanvas(cv);
+  const W = cv.width, H = cv.height, dpr = window.devicePixelRatio || 1;
+  const off = document.createElement("canvas"); off.width = W; off.height = H;
+  const ctx = off.getContext("2d");
+  chartCache = off;
+  chartCache.lanes = LANES;
+  if (!run || !run.frames.length) return;
+  const n = run.frames.length, laneH = H / LANES.length, padL = 78 * dpr, padR = 70 * dpr, w = W - padL - padR;
+  ctx.font = `${11 * dpr}px ${css("--sans")}`;
+  ctx.textBaseline = "middle";
+  LANES.forEach((lane, k) => {
+    const y0 = k * laneH, vals = run.frames.map((f) => lane.get(f.state));
+    const finite = vals.filter((v) => v != null && isFinite(v));
+    if (k) { ctx.fillStyle = css("--line"); ctx.fillRect(0, y0, W, dpr); }
+    ctx.fillStyle = css(lane.color);
+    ctx.fillText(lane.key, 10 * dpr, y0 + laneH / 2);
+    if (!finite.length) return;
+    let lo = Math.min(...finite), hi = Math.max(...finite);
+    if (hi - lo < 1e-4) { lo -= 5e-5; hi += 5e-5; }
+    ctx.fillStyle = css("--faint");
+    ctx.fillText(lane.unit(hi), W - padR + 6 * dpr, y0 + 9 * dpr);
+    ctx.fillText(lane.unit(lo), W - padR + 6 * dpr, y0 + laneH - 9 * dpr);
+    ctx.strokeStyle = css(lane.color); ctx.lineWidth = 1.5 * dpr; ctx.beginPath();
+    let started = false;
+    vals.forEach((v, i) => {
+      if (v == null || !isFinite(v)) { started = false; return; }
+      const x = padL + xOf(i, n, w), y = y0 + 5 * dpr + (1 - (v - lo) / (hi - lo)) * (laneH - 10 * dpr);
+      if (started) ctx.lineTo(x, y); else { ctx.moveTo(x, y); started = true; }
+    });
+    ctx.stroke();
+  });
+  chartCache.meta = { padL, w, n };
+}
+function drawChart() {
+  const cv = $("chart");
+  if (sizeCanvas(cv) || !chartCache || chartCache.width !== cv.width) drawChartCache();
+  const ctx = cv.getContext("2d");
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.drawImage(chartCache, 0, 0);
+  const run = S.run, m = chartCache.meta;
+  if (!run || !m) return;
+  const dpr = window.devicePixelRatio || 1, x = m.padL + xOf(S.cursor, m.n, m.w);
+  if (run.success) {
+    ctx.fillStyle = css("--ok"); ctx.globalAlpha = .6;
+    ctx.fillRect(m.padL + xOf(run.success.frame, m.n, m.w) - dpr / 2, 0, dpr, cv.height);
+    ctx.globalAlpha = 1;
+  }
+  ctx.fillStyle = css("--text");
+  ctx.fillRect(x - dpr / 2, 0, dpr, cv.height);
+  const LANES = chartCache.lanes || [], f = run.frames[S.cursor], laneH = cv.height / Math.max(1, LANES.length);
+  if (!f) return;
+  ctx.font = `600 ${11 * dpr}px ${css("--mono")}`; ctx.textBaseline = "middle";
+  LANES.forEach((lane, k) => {
+    const v = lane.get(f.state);
+    if (v == null) return;
+    ctx.fillStyle = css(lane.color);
+    ctx.fillText(lane.unit(v), 10 * dpr, k * laneH + laneH / 2 + 14 * dpr);
+  });
+}
+(function bindChart() {
+  const cv = $("chart");
+  const at = (clientX) => {
+    const m = chartCache && chartCache.meta; if (!m || !S.run) return 0;
+    const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    const t = ((clientX - r.left) * dpr - m.padL) / m.w;
+    return Math.min(m.n - 1, Math.max(0, Math.round(t * (m.n - 1))));
+  };
+  let down = false;
+  cv.addEventListener("pointerdown", (e) => { down = true; cv.setPointerCapture(e.pointerId); seek(at(e.clientX)); });
+  cv.addEventListener("pointermove", (e) => { if (down) seek(at(e.clientX)); });
+  cv.addEventListener("pointerup", () => (down = false));
+})();
+
+// ---------- playback ----------
+function seek(i, keepFollow) {
+  const run = S.run; if (!run || !run.frames.length) return;
+  S.picked = null;
+  S.cursor = Math.min(run.frames.length - 1, Math.max(0, i));
+  if (!keepFollow) S.follow = !run.finished && S.cursor === run.frames.length - 1 && S.follow;
+  renderAll();
+}
+function step(d) { pause(); S.follow = false; seek(S.cursor + d); }
+function jumpCall(dir) {
+  const run = S.run; if (!run || !run.frames.length) return;
+  pause(); S.follow = false;
+  const cur = run.frames[S.cursor].call;
+  const anchors = run.calls.filter((c) => c.frames.length).map((c) => c.anchor);
+  if (dir > 0) { const a = anchors.find((a) => a > S.cursor && run.frames[a].call !== cur); seek(a != null ? a : run.frames.length - 1); }
+  else {
+    const startOfCur = cur != null ? run.calls[cur].anchor : S.cursor;
+    const prev = [...anchors].reverse().find((a) => a < (S.cursor > startOfCur ? S.cursor : startOfCur));
+    seek(prev != null ? prev : 0);
+  }
+}
+function goLive() { const run = S.run; if (!run) return; pause(); S.follow = !run.finished; seek(run.frames.length - 1, true); }
+function play() {
+  const run = S.run; if (!run || !run.frames.length) return;
+  if (S.cursor >= run.frames.length - 1) S.cursor = 0;
+  S.playing = true; S.follow = false; S.lastTick = performance.now(); S.acc = 0;
+  requestAnimationFrame(tick); renderAll();
+}
+function pause() { if (S.playing) { S.playing = false; renderAll(); } }
+function tick(now) {
+  if (!S.playing || !S.run) return;
+  S.acc += ((now - S.lastTick) / 1000) * S.fps;
+  S.lastTick = now;
+  const adv = Math.floor(S.acc);
+  if (adv > 0) {
+    S.acc -= adv;
+    S.picked = null;
+    const last = S.run.frames.length - 1;
+    if (S.cursor + adv >= last) {
+      S.cursor = last;
+      // At the end: a running episode switches to live, a finished one stops
+      if (!S.run.finished) { S.playing = false; S.follow = true; }
+      else S.playing = false;
+    } else S.cursor += adv;
+    renderAll();
+  }
+  if (S.playing) requestAnimationFrame(tick);
+}
+
+$("b-play").onclick = () => (S.playing ? pause() : play());
+$("b-prev").onclick = () => step(-1);
+$("b-next").onclick = () => step(1);
+$("b-first").onclick = () => { pause(); S.follow = false; seek(0); };
+$("b-last").onclick = () => { pause(); seek(S.run.frames.length - 1); };
+$("b-pcall").onclick = () => jumpCall(-1);
+$("b-ncall").onclick = () => jumpCall(1);
+$("b-live").onclick = goLive;
+$("fps").onchange = (e) => (S.fps = +e.target.value);
+
+document.addEventListener("keydown", (e) => {
+  if (e.target.closest("input, select, textarea") || e.ctrlKey || e.metaKey || e.altKey || !S.run) return;
+  const k = e.key;
+  if (k === " ") { e.preventDefault(); S.playing ? pause() : play(); }
+  else if (k === "ArrowLeft") { e.preventDefault(); step(e.shiftKey ? -10 : -1); }
+  else if (k === "ArrowRight") { e.preventDefault(); step(e.shiftKey ? 10 : 1); }
+  else if (k === "[") jumpCall(-1);
+  else if (k === "]") jumpCall(1);
+  else if (k === "Home") { e.preventDefault(); pause(); S.follow = false; seek(0); }
+  else if (k === "End") { e.preventDefault(); pause(); seek(S.run.frames.length - 1); }
+  else if (k === "l" || k === "L") goLive();
+});
+
+// ---------- address bar: reloads and shared links return to the same frame ----------
+let hashTimer = null;
+function syncHash() {
+  if (hashTimer || !S.run) return;
+  hashTimer = setTimeout(() => {
+    hashTimer = null;
+    if (!S.run) return;
+    const h = `#run=${S.run.id}` + (S.follow ? "" : `&f=${S.cursor}`);
+    if (location.hash !== h) history.replaceState(null, "", h);
+  }, 400);
+}
+function fromHash() {
+  const q = new URLSearchParams(location.hash.slice(1));
+  return { run: q.get("run"), frame: q.has("f") ? +q.get("f") : null };
+}
+
+// ---------- language switch ----------
+function applyLang() {
+  document.documentElement.lang = LANG === "zh" ? "zh-CN" : "en";
+  document.title = tr("title");
+  for (const el of document.querySelectorAll("[data-i18n]")) el.textContent = tr(el.dataset.i18n);
+  for (const el of document.querySelectorAll("[data-i18n-html]")) el.innerHTML = tr(el.dataset.i18nHtml);
+  for (const el of document.querySelectorAll("[data-i18n-title]")) el.title = tr(el.dataset.i18nTitle);
+  for (const option of $("fps").options) option.textContent = tr(option.value === "20" ? "fpsSim" : "fps", option.value);
+}
+function setLang(lang) {
+  LANG = lang;
+  try { localStorage.setItem("embodify-monitor-lang", lang); } catch (e) { /* the choice just is not remembered */ }
+  applyLang();
+  camsKey = ""; envKey = "";
+  renderList();
+  if (S.run) { renderLog(true); drawChartCache(); renderAll(); }
+}
+$("b-lang").onclick = () => setLang(LANG === "zh" ? "en" : "zh");
+
+window.addEventListener("resize", () => { if (S.run) { drawChartCache(); renderAll(); } });
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if (S.run) { drawChartCache(); renderLog(true); renderAll(); } });
+
+(async function boot() {
+  LANG = initialLang();
+  applyLang();
+  await refreshList();
+  setInterval(refreshList, LIST_MS);
+  const h = fromHash();
+  if (h.run && S.runs.some((r) => r.id === h.run)) openRun(h.run, h.frame);
+  else if (S.runs.length) openRun(S.runs[0].id, null);
+})();
+</script>
+</body>
+</html>

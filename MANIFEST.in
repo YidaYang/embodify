@@ -1,0 +1,9 @@
+include README.zh-CN.md LICENSE NOTICE THIRD_PARTY_NOTICES.md CHANGELOG.md CONTRIBUTING.md CODE_OF_CONDUCT.md SECURITY.md CITATION.cff .gitignore .gitattributes
+recursive-include docs *.md *.json
+recursive-include examples *.json
+recursive-include tests *.py
+recursive-include .github *.yml *.md
+recursive-include tools *.py
+recursive-include environments *.txt
+recursive-include embodify-skills *.md *.json
+recursive-include .claude-plugin *.json

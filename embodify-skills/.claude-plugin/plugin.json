@@ -1,0 +1,16 @@
+{
+  "name": "embodify-skills",
+  "version": "0.1.0-alpha.1",
+  "description": "Embodify skills: operate robots through the Embodify MCP server, keep a profile of the robot body and improve from experience.",
+  "author": {
+    "name": "Yida Yang"
+  },
+  "license": "Apache-2.0",
+  "keywords": [
+    "robotics",
+    "embodied-ai",
+    "skills",
+    "manipulation",
+    "embodify"
+  ]
+}

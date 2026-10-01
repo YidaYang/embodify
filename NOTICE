@@ -1,0 +1,7 @@
+Embodify
+Copyright 2026 Yida Yang
+
+Original project code is licensed under the Apache License 2.0.
+The upstream RoboDojo result-writer test fixture keeps its MIT license;
+see THIRD_PARTY_NOTICES.md. Simulator assets, model weights and datasets
+are not included and are not relicensed by this project.

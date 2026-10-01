@@ -1,0 +1,14 @@
+{
+  "name": "embodify",
+  "owner": {
+    "name": "Yida Yang"
+  },
+  "description": "Embodify: give your agent a body.",
+  "plugins": [
+    {
+      "name": "embodify-skills",
+      "source": "./embodify-skills",
+      "description": "Embodify skills: operate robots through the Embodify MCP server, keep a profile of the robot body and improve from experience."
+    }
+  ]
+}

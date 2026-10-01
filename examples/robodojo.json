@@ -1,0 +1,12 @@
+{
+  "source": "/opt/RoboDojo",
+  "python": "/opt/isaac-runtime/bin/python",
+  "output": "/var/tmp/embodify-robodojo",
+  "task": "stack_blocks",
+  "seed": 0,
+  "layout_index": 0,
+  "startup_timeout_s": 600,
+  "action_timeout_s": 180,
+  "image_size": 256,
+  "episode_budget": null
+}

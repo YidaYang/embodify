@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If Embodify helps your research, please cite it as below."
+title: "Embodify: Give Your Agent a Body"
+type: software
+authors:
+  - family-names: Yang
+    given-names: Yida
+version: 0.1.0a1
+license: Apache-2.0
+repository-code: "https://github.com/YidaYang/embodify"
+url: "https://github.com/YidaYang/embodify"
+abstract: >-
+  Embodify lets the agent you already use, such as Claude Code or Codex, observe and
+  control robots through an MCP server and a pack of agent skills, with simulator
+  backends for LIBERO and RoboDojo.
+keywords:
+  - embodied AI
+  - robotics
+  - robot manipulation
+  - MCP
+  - LLM agents
+  - agent evaluation

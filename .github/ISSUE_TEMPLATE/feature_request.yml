@@ -1,0 +1,16 @@
+name: Feature or skill request
+description: Suggest a tool, a skill or another improvement.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you would like
+      description: The tool, skill or change, and the problem it solves.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: The backend, agent and task where you need it, and any related work or papers.
