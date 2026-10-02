@@ -49,4 +49,13 @@ automatically, and document units, frames and stop reasons in the
 - Do not commit credentials, personal host configuration, run logs or simulator assets.
 - Preserve third-party notices.
 
+## Releasing
+
+Maintainers set the new version in `pyproject.toml`, `embodify_mcp/__init__.py`,
+`server.json` and `packaging/embodify/pyproject.toml` (`tools/check_release.py`
+checks that they agree), update the changelog, push a tag `v<version>` and
+publish a GitHub release for it. The release workflow then uploads
+`embodify-mcp` and its alias `embodify` to PyPI and publishes `server.json` to
+the MCP Registry.
+
 Contributions are licensed under Apache-2.0 unless a file states otherwise.

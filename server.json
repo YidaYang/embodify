@@ -1,0 +1,23 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.YidaYang/embodify",
+  "title": "Embodify",
+  "description": "Give your agent a body: observe and control simulated robots (LIBERO, RoboDojo) over MCP.",
+  "repository": {
+    "url": "https://github.com/YidaYang/embodify",
+    "source": "github"
+  },
+  "websiteUrl": "https://github.com/YidaYang/embodify",
+  "version": "0.1.0a1",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "embodify-mcp",
+      "version": "0.1.0a1",
+      "runtimeHint": "uvx",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

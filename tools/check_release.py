@@ -27,6 +27,22 @@ def patterns():
     return found
 
 
+def versions():
+    """Every place that carries the package version, so a release cannot publish them out of step."""
+    def find(path, pattern):
+        match = re.search(pattern, (ROOT / path).read_text(encoding="utf-8"), re.M)
+        return match.group(1) if match else None
+    server = json.loads((ROOT / "server.json").read_text(encoding="utf-8"))
+    return server["name"], {
+        "pyproject.toml": find("pyproject.toml", r'^version = "([^"]+)"'),
+        "embodify_mcp/__init__.py": find("embodify_mcp/__init__.py", r'^__version__ = "([^"]+)"'),
+        "server.json": server["version"],
+        "server.json package": server["packages"][0]["version"],
+        "packaging/embodify": find("packaging/embodify/pyproject.toml", r'^version = "([^"]+)"'),
+        "packaging/embodify dependency": find("packaging/embodify/pyproject.toml", r'"embodify-mcp==([^"]+)"'),
+    }
+
+
 def check():
     issues = []
     count = 0
@@ -64,6 +80,12 @@ def check():
                      "embodify_mcp/monitor_page.html"):
         if not (ROOT / required).is_file():
             issues.append("Missing " + required)
+    server_name, found = versions()
+    if len(set(found.values())) != 1:
+        issues.append("Versions differ: " + json.dumps(found))
+    # The MCP Registry accepts the PyPI package only if its README names the server.
+    if "mcp-name: " + server_name not in (ROOT / "README.md").read_text(encoding="utf-8"):
+        issues.append("README.md lacks mcp-name: " + server_name)
     if issues:
         raise SystemExit("\n".join(issues))
     print(json.dumps({"ok": True, "source_files": count, "python38_syntax": True,
