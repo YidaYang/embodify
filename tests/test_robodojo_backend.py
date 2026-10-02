@@ -244,8 +244,9 @@ def test_parent_death_terminates_worker():
     try:
         pid=int(proc.stdout.readline());proc.terminate();proc.wait(timeout=5)
         for _ in range(100):
-            stat=Path('/proc/%d/stat'%pid)
-            if not stat.exists() or stat.read_text().split()[2]=='Z': break
+            try:
+                if Path('/proc/%d/stat'%pid).read_text().split()[2]=='Z': break
+            except OSError: break  # Gone, possibly between two checks: the worker died as required.
             time.sleep(.02)
         else: raise AssertionError('GPU worker would survive supervisor death')
     finally:
