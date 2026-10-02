@@ -562,6 +562,22 @@ def test_cli_exposes_the_scene_defaults_and_the_lock(tmp_path):
     assert build_parser().parse_args(["--lock-task"]).lock_task is True
 
 
+def test_settings_file_supplies_options_and_the_command_line_wins(tmp_path):
+    import pytest
+    from embodify_mcp.mcp import build_parser, parse_args
+
+    config = tmp_path / "config.json"
+    config.write_text(json.dumps({"backend": "fake-two-arm", "monitor-port": 8765, "lock_task": True,
+                                  "remote-config": "remote.json"}), encoding="utf-8")
+    args = parse_args(build_parser(), ["--config", str(config), "--monitor-port", "9000"])
+    assert (args.backend, args.monitor_port, args.lock_task) == ("fake-two-arm", 9000, True)
+    assert Path(args.remote_config) == tmp_path / "remote.json"
+    assert parse_args(build_parser(), ["--config", str(tmp_path / "missing.json")]).backend == "fake"
+    config.write_text(json.dumps({"backend": "nonsense"}), encoding="utf-8")
+    with pytest.raises(SystemExit):
+        parse_args(build_parser(), ["--config", str(config)])
+
+
 # -- the whole benchmark is open to the Agent -----------------------------------------
 
 

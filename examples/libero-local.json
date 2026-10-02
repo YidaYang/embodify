@@ -1,0 +1,14 @@
+{
+  "transport": "stdio",
+  "command": [
+    "env",
+    "MUJOCO_GL=egl",
+    "PYOPENGL_PLATFORM=egl",
+    "/home/USER/miniconda3/envs/embodify-libero/bin/embodify-mcp-backend",
+    "--backend",
+    "libero"
+  ],
+  "timeout_s": 300,
+  "connect_timeout_s": 120,
+  "heartbeat_timeout_s": 30
+}

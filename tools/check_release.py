@@ -40,6 +40,8 @@ def versions():
         "server.json package": server["packages"][0]["version"],
         "packaging/embodify": find("packaging/embodify/pyproject.toml", r'^version = "([^"]+)"'),
         "packaging/embodify dependency": find("packaging/embodify/pyproject.toml", r'"embodify-mcp==([^"]+)"'),
+        "plugin/.claude-plugin/plugin.json": find("plugin/.claude-plugin/plugin.json", r'"version": "([^"]+)"'),
+        "plugin/.mcp.json": find("plugin/.mcp.json", r'"embodify-mcp==([^"]+)"'),
     }
 
 

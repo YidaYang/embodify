@@ -49,17 +49,17 @@ Embodify 保留这一切，只是再给它一个身体。装上插件后，你�
 
 ## 包含什么
 
-Embodify 是一个 Agent 插件，由两部分组成：
+Embodify 是一个 Agent 插件，由两部分组成，装上插件两部分就都有了：
 
 | 组成 | 给 Agent 带来什么 |
 |---|---|
 | **MCP 服务**（`embodify-mcp`，在 Agent 中注册为 `embodify`） | 查看任务、开始一个 episode、观测相机和机器人状态、移动末端、开合夹爪、协调双臂的工具。 |
-| **技能包**（`embodify-skills`） | 操作经验：谨慎的“观测—行动”循环、记录机器人本体与相机信息、从过往 episode 中总结经验。更多感知类技能即将加入。 |
+| **技能（Skills）** | 操作经验：谨慎的“观测—行动”循环、记录机器人本体与相机信息、从过往 episode 中总结经验。更多感知类技能即将加入。 |
 
 ```mermaid
 flowchart LR
   A["你的 Agent<br/>Claude Code · Codex · …"] -- "MCP (stdio)" --> B["embodify-mcp<br/>episode · 预算 · 日志"]
-  K["embodify-skills 技能包"] -. "加载" .-> A
+  K["Embodify 技能"] -. "加载" .-> A
   B --> I["后端接口"]
   I --> L["LIBERO"]
   I --> R["RoboDojo"]
@@ -112,49 +112,36 @@ Embodify 也是评测大模型和 Agent 框架具身操作能力的实验平台�
 请你给自己安装 Embodify（https://github.com/YidaYang/embodify），并配置 LIBERO 环境或连接已有的仿真环境。
 ```
 
-就这么简单。Agent 会把 MCP 服务和技能装进自己的配置、搭好仿真环境，完成后提醒你重启会话。（Agent 请按照[安装指南](docs/agent-setup.md)操作。）
+就这么简单。Agent 会给自己装好 Embodify 插件、搭好仿真环境，完成后提醒你重启会话。（Agent 请按照[安装指南](docs/agent-setup.md)操作。）
 
 ### 手动安装
 
-需要 Python 3.8+（宿主侧推荐 3.10+）。
-
-```sh
-git clone https://github.com/YidaYang/embodify.git
-cd embodify
-python -m pip install .
-embodify-mcp-smoke            # 端到端自检：不需要仿真器、GPU 或模型
-```
-
-然后在你的 Agent 里把 MCP 服务注册为 `embodify`，并安装技能包 `embodify-skills`。下面的命令先使用 Fake 后端，装好就能试用各个工具；接着再[连接真实仿真器](#连接真实仿真器)。
+Embodify 用 [uv](https://docs.astral.sh/uv/) 直接从 PyPI 启动 MCP 服务。还没有 uv 的话，用 `python -m pip install uv` 或[官方安装脚本](https://docs.astral.sh/uv/getting-started/installation/)安装。
 
 ### Claude Code
 
 ```sh
-claude mcp add --scope user embodify -- embodify-mcp --backend fake
 claude plugin marketplace add YidaYang/embodify
-claude plugin install embodify-skills@embodify
+claude plugin install embodify@embodify
 ```
 
 ### Codex
 
 ```sh
-codex mcp add embodify -- embodify-mcp --backend fake
 codex plugin marketplace add YidaYang/embodify
-codex plugin add embodify-skills@embodify
+codex plugin add embodify@embodify
 ```
 
-仿真器启动可能需要几分钟，请在 `~/.codex/config.toml` 里给服务留足超时：
+插件同时带来 MCP 服务（注册名为 `embodify`）和技能。服务默认使用 Fake 后端，装好就能试用各个工具；接着再[连接真实仿真器](#连接真实仿真器)。服务从 `~/.embodify/config.json` 读取设置（见[后端安装说明](docs/backends.md)）。不经过 Agent、单独检查这个包：
 
-```toml
-[mcp_servers.embodify]
-startup_timeout_sec = 120
-tool_timeout_sec = 900
+```sh
+uvx --from embodify-mcp embodify-mcp-smoke   # 端到端自检：不需要仿真器、GPU 或模型
 ```
 
 ### 其他 Agent
 
 1. 参照 [examples/mcp.json](examples/mcp.json)，把服务注册进 Agent 的 MCP 配置。
-2. 如果 Agent 支持 Agent Skills（`SKILL.md` 目录），把 [embodify-skills/skills/](embodify-skills/skills/) 下的文件夹复制或链接到它的技能目录。
+2. 如果 Agent 支持 Agent Skills（`SKILL.md` 目录），把 [plugin/skills/](plugin/skills/) 下的文件夹复制或链接到它的技能目录。
 
 重启会话后，可以对 Agent 说：*“重置任务，描述相机里看到了什么，然后把夹爪抬高 5 厘米。”*
 
@@ -166,14 +153,14 @@ tool_timeout_sec = 900
 请按照 https://github.com/YidaYang/embodify/blob/main/docs/agent-setup.md 帮我把 Embodify 连接到真实仿真器：在本机配置 LIBERO，或连接我已有的仿真环境。
 ```
 
-Agent 会装好仿真器，或经 SSH 连接你已有的仿真器，把 `embodify` 服务指向它，然后提醒你重启会话。想手动配置，请看[后端安装说明](docs/backends.md)。
+Agent 会装好仿真器，或经 SSH 连接你已有的仿真器，把服务设置写进 `~/.embodify/config.json`，然后提醒你重启会话。想手动配置，请看[后端安装说明](docs/backends.md)。
 
 ### 实时观看与回放机器人操作
 
-在服务启动命令里加上 `--monitor-port 8765`，打开 http://127.0.0.1:8765，就能实时观看机器人的操作：每一路相机画面、机器人状态，以及 Agent 的每一次工具调用；也可以逐帧回放任意一次历史 episode。不启动服务、只浏览已保存的记录：
+在 `~/.embodify/config.json` 里加上 `"monitor-port": 8765`，打开 http://127.0.0.1:8765，就能实时观看机器人的操作：每一路相机画面、机器人状态，以及 Agent 的每一次工具调用；也可以逐帧回放任意一次历史 episode。不启动服务、只浏览已保存的记录：
 
 ```sh
-embodify-mcp-monitor --root out/mcp
+uvx --from embodify-mcp embodify-mcp-monitor   # 读取 ~/.embodify/runs
 ```
 
 监控页只监听本机地址。
@@ -195,15 +182,15 @@ embodify-mcp-monitor --root out/mcp
 
 ## 技能（Skills）
 
-技能包 `embodify-skills` 包含：
+插件包含以下技能：
 
 | 技能 | 状态 | 作用 |
 |---|---|---|
-| [embodied-control](embodify-skills/skills/embodied-control/SKILL.md) | v0 | 观测—行动循环：小步移动、读懂停止原因、确认抓取、单独一次调用松开夹爪 |
-| [robot-profile](embodify-skills/skills/robot-profile/SKILL.md) | v0 | 维护机器人档案：臂、相机、坐标系、标定和实测运动表现 |
-| [task-experience](embodify-skills/skills/task-experience/SKILL.md) | v0 | 每个 episode 后写一条经验，下次开始前读相关经验，重复出现的经验升级为规则 |
-| [object-segmentation](embodify-skills/skills/object-segmentation/SKILL.md) | 即将推出 | 对相机图像做开放词表分割 |
-| [depth-ranging](embodify-skills/skills/depth-ranging/SKILL.md) | 即将推出 | 用深度图和标定把像素换算成三维位置 |
+| [embodied-control](plugin/skills/embodied-control/SKILL.md) | v0 | 观测—行动循环：小步移动、读懂停止原因、确认抓取、单独一次调用松开夹爪 |
+| [robot-profile](plugin/skills/robot-profile/SKILL.md) | v0 | 维护机器人档案：臂、相机、坐标系、标定和实测运动表现 |
+| [task-experience](plugin/skills/task-experience/SKILL.md) | v0 | 每个 episode 后写一条经验，下次开始前读相关经验，重复出现的经验升级为规则 |
+| [object-segmentation](plugin/skills/object-segmentation/SKILL.md) | 即将推出 | 对相机图像做开放词表分割 |
+| [depth-ranging](plugin/skills/depth-ranging/SKILL.md) | 即将推出 | 用深度图和标定把像素换算成三维位置 |
 
 技能分为三类，会持续扩充：
 

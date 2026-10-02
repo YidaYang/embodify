@@ -27,11 +27,11 @@ on Fake.
 
 ## Adding a skill
 
-Create `embodify-skills/skills/<skill-name>/SKILL.md` with `name` and
+Create `plugin/skills/<skill-name>/SKILL.md` with `name` and
 `description` in its frontmatter, and keep supporting files such as templates
 in the same folder. Write for the agent: concrete steps, what to check after
 each action and what to avoid. If you use Claude Code, check the skills pack
-with `claude plugin validate --strict embodify-skills/.claude-plugin/plugin.json`.
+with `claude plugin validate --strict plugin`.
 List the new skill in both READMEs.
 
 ## Changing action semantics
@@ -52,7 +52,8 @@ automatically, and document units, frames and stop reasons in the
 ## Releasing
 
 Maintainers set the new version in `pyproject.toml`, `embodify_mcp/__init__.py`,
-`server.json` and `packaging/embodify/pyproject.toml` (`tools/check_release.py`
+`server.json`, `packaging/embodify/pyproject.toml`, `plugin/.claude-plugin/plugin.json`
+and the `embodify-mcp==` pin in `plugin/.mcp.json` (`tools/check_release.py`
 checks that they agree), update the changelog, push a tag `v<version>` and
 publish a GitHub release for it. The release workflow then uploads
 `embodify-mcp` and its alias `embodify` to PyPI and publishes `server.json` to

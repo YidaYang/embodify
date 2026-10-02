@@ -6,9 +6,9 @@
   "description": "Embodify: give your agent a body.",
   "plugins": [
     {
-      "name": "embodify-skills",
-      "source": "./embodify-skills",
-      "description": "Embodify skills: operate robots through the Embodify MCP server, keep a profile of the robot body and improve from experience."
+      "name": "embodify",
+      "source": "./plugin",
+      "description": "The Embodify MCP server for observing and controlling robots, plus skills for operating them and improving from experience."
     }
   ]
 }

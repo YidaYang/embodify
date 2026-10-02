@@ -173,14 +173,14 @@ def serve_connection(backend, connection, *, heartbeat_interval=1.0, peer_timeou
 
 
 def main(argv=None):
-    from ..mcp import build_backend, build_parser, split_protocol_stdout
+    from ..mcp import build_backend, build_parser, parse_args, split_protocol_stdout
 
     parser = build_parser()
     parser.description = "Embodify backend service (runs no MCP and keeps no local Agent logs)"
     parser.add_argument("--listen-host", default="127.0.0.1")
     parser.add_argument("--listen-port", type=int, default=None, help="Omit to use stdio; 0 lets the system choose a port")
     parser.add_argument("--peer-timeout", type=float, default=30.0)
-    args = parser.parse_args(argv)
+    args = parse_args(parser, argv)
     if args.backend == "remote":
         parser.error("The backend service cannot wrap the remote backend")
     if args.peer_timeout < 2:

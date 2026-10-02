@@ -10,8 +10,9 @@ the remote machine too.
 
 | Option | Backends | Meaning |
 |---|---|---|
+| `--config` | all | JSON settings file holding any of the options below; the command line overrides it |
 | `--backend` | all | `fake`, `fake-two-arm`, `libero`, `robodojo` or `remote` |
-| `--output-root` | all | Where run logs and images are written (default `out/mcp`) |
+| `--output-root` | all | Where run logs and images are written (default `~/.embodify/runs`) |
 | `--monitor-port` | all | Also serve the live monitor and replay page on this localhost port |
 | `--max-steps-per-call` | all | Most internal steps one tool call may run (default 30) |
 | `--lock-task` | all | Fix the scene, so the agent cannot choose another task or initial state |
@@ -21,6 +22,21 @@ the remote machine too.
 | `--controller-verified` | fake, libero | Record that you checked the controller calibration |
 | `--robodojo-config` | robodojo | RoboDojo configuration file |
 | `--remote-config`, `--frame-stride` | remote | Transport configuration; send every n-th intermediate image (every robot state is kept) |
+
+The plugin starts the server with `--config ~/.embodify/config.json`. Its keys
+are the long options without the leading dashes, `true` or `false` for switches,
+and relative paths are resolved against the file's folder:
+
+```json
+{
+  "backend": "remote",
+  "remote-config": "libero-local.json",
+  "monitor-port": 8765
+}
+```
+
+Without the file, the server runs on its defaults, the Fake backend. See
+[examples/config.json](../examples/config.json).
 
 ## Fake
 
@@ -45,6 +61,12 @@ it describes the LIBERO environment, not the agent host.
 python -m pip install /path/to/embodify
 MUJOCO_GL=egl embodify-mcp --backend libero --output-root out/libero
 ```
+
+The plugin's server runs outside the LIBERO environment, so it reaches LIBERO
+through a backend process: set `"backend": "remote"` and point `remote-config`
+at a file like [examples/libero-local.json](../examples/libero-local.json),
+whose command runs `embodify-mcp-backend --backend libero` with the LIBERO
+environment's Python.
 
 Use `MUJOCO_GL=egl` on a GPU machine or `MUJOCO_GL=osmesa` to render on the CPU.
 The agent can browse all 130 tasks of the five suites with `list_tasks` and

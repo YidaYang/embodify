@@ -1,7 +1,7 @@
 """Embodify monitor: a read-only local web page showing what the Agent is doing and has done.
 
 It **only reads the disk**: all data comes from the journals the MCP server has already written
-(`out/mcp/<timestamp>/<rN>/`). It never talks to the MCP process or touches the simulator, which
+(`~/.embodify/runs/<timestamp>/<rN>/` by default). It never talks to the MCP process or touches the simulator, which
 has three benefits:
 
 - a crashed, stuck or ten-tabs-open monitor cannot slow down or interrupt a running episode;
@@ -14,7 +14,7 @@ must not see during evaluation. It listens on 127.0.0.1 by default; isolating an
 needs operating-system permission boundaries.
 
 Usage:
-    python -m embodify_mcp.monitor                  # reads out/mcp, serves http://127.0.0.1:8765
+    python -m embodify_mcp.monitor                  # reads ~/.embodify/runs, serves http://127.0.0.1:8765
     python -m embodify_mcp.monitor --open           # also opens a browser
     python -m embodify_mcp.mcp --monitor-port 8765   # let the MCP server run one itself
 """
@@ -281,12 +281,13 @@ def start_in_background(root: Path, port: int, host: str = "127.0.0.1") -> Optio
 
 def main(argv: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="Embodify monitor: a read-only web page for live view and replay")
-    parser.add_argument("--root", default="out/mcp", help="The MCP server's --output-root")
+    parser.add_argument("--root", default="~/.embodify/runs", help="The MCP server's --output-root")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--open", action="store_true", help="Open a browser after starting")
     args = parser.parse_args(argv)
-    server = make_server(Path(args.root), args.host, args.port)
+    args.root = Path(args.root).expanduser()
+    server = make_server(args.root, args.host, args.port)
     url = f"http://{args.host}:{server.server_address[1]}/"
     print(f"Monitor page: {url}   (data directory {Path(args.root).resolve()}; Ctrl+C to quit)")
     if args.open:

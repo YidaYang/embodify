@@ -5,6 +5,6 @@ recursive-include tests *.py
 recursive-include .github *.yml *.md
 recursive-include tools *.py
 recursive-include environments *.txt
-recursive-include embodify-skills *.md *.json
+recursive-include plugin *.md *.json
 recursive-include .claude-plugin *.json
 recursive-include packaging *.toml *.md

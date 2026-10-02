@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "embodify-mcp"
-version = "0.1.0a1"
+version = "0.1.0a2"
 description = "Embodify MCP server: robot observation and control tools for the agent you already use"
 readme = "README.md"
 authors = [{name = "Yida Yang"}]

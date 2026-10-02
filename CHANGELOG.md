@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.1.0a2 — One plugin
+
+- The plugin now brings the MCP server as well as the skills, and is renamed
+  from `embodify-skills` to `embodify`: install it with
+  `claude plugin install embodify@embodify` or `codex plugin add embodify@embodify`.
+  The server starts with `uvx` from PyPI, so the plugin needs
+  [uv](https://docs.astral.sh/uv/) and no separate installation.
+- `--config` reads the server's options from a JSON settings file; the plugin
+  uses `~/.embodify/config.json`, and runs on the Fake backend until it exists.
+  Connecting a simulator now means writing that file instead of registering the
+  server again.
+- Run logs go to `~/.embodify/runs` by default instead of `out/mcp` in the
+  current folder, and the monitor reads them from there.
+- Published on PyPI as `embodify-mcp`, with the alias `embodify`, and listed in
+  the MCP Registry as `io.github.YidaYang/embodify`.
+
 ## 0.1.0a1 — First release
 
 Embodify gives your agent a body: an MCP server and a set of skills that let

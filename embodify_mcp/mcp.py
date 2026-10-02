@@ -30,6 +30,9 @@ from .journal import Journal, RunManifest
 from .mcp_tools import build_tools
 from .primitives.controller import target_quat_from_rpy_delta
 
+#: Run logs live in the user's home rather than in whatever folder the agent was started from.
+DEFAULT_OUTPUT_ROOT = "~/.embodify/runs"
+
 
 class McpSession:
     """One MCP process, one backend, at most one running episode at a time."""
@@ -895,7 +898,7 @@ def build_session(args: argparse.Namespace) -> McpSession:
         )
     return McpSession(
         backend,
-        output_root=Path(args.output_root),
+        output_root=Path(args.output_root).expanduser(),
         max_steps_per_call=args.max_steps_per_call,
         task_locked=args.lock_task,
     )
@@ -925,6 +928,10 @@ def split_protocol_stdout() -> Any:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Embodify MCP stdio server: robot observation and control tools")
     parser.add_argument("--version", action="version", version=__version__)
+    parser.add_argument(
+        "--config",
+        help="JSON settings file whose keys are the long options below; options given on the command line override it",
+    )
     parser.add_argument("--backend", choices=BACKENDS, default="fake", help="Which backend to connect")
     parser.add_argument("--robodojo-config", help="RoboDojo worker configuration JSON")
     parser.add_argument("--remote-config", help="Backend transport JSON configuration")
@@ -955,7 +962,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Most internal simulation steps one tool call may run (a cap, not a quota)",
     )
     parser.add_argument("--renderer", default=None)
-    parser.add_argument("--output-root", default="out/mcp")
+    parser.add_argument("--output-root", default=DEFAULT_OUTPUT_ROOT, help="Where run logs and images are written")
     parser.add_argument(
         "--monitor-port",
         type=int,
@@ -970,14 +977,63 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+#: Settings that name files; relative paths in a settings file are resolved against the file's folder.
+_PATH_SETTINGS = {"robodojo_config", "remote_config", "output_root"}
+
+
+def settings_argv(parser: argparse.ArgumentParser, path: str) -> List[str]:
+    """Turn a JSON settings file into command-line arguments, so argparse checks them exactly like typed ones.
+
+    The plugin starts the server with `--config ~/.embodify/config.json`; until an agent writes that file,
+    the server runs on its defaults (the Fake backend).
+    """
+    file = Path(path).expanduser()
+    if not file.is_file():
+        print(f"[embodify-mcp] No settings file at {file}; using the defaults", file=sys.stderr)
+        return []
+    try:
+        settings = json.loads(file.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError) as exc:
+        parser.error(f"Cannot read settings file {file}: {exc}")
+    if not isinstance(settings, dict):
+        parser.error(f"Settings file {file} must hold a JSON object")
+    options = {action.dest: action for action in parser._actions if action.option_strings}
+    argv: List[str] = []
+    for key, value in settings.items():
+        dest = str(key).replace("-", "_")
+        action = options.get(dest)
+        if action is None or dest in ("config", "help", "version"):
+            parser.error(f"Unknown setting {key!r} in {file}")
+        flag = max(action.option_strings, key=len)
+        if action.nargs == 0:
+            if not isinstance(value, bool):
+                parser.error(f"Setting {key!r} in {file} must be true or false")
+            argv += [flag] if value else []
+        elif value is not None:
+            if dest in _PATH_SETTINGS:
+                value = str(file.parent / Path(str(value)).expanduser())
+            argv += [flag, str(value)]
+    return argv
+
+
+def parse_args(parser: argparse.ArgumentParser, argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
+    """Parse the command line, with values from `--config` underneath it."""
+    argv = list(sys.argv[1:] if argv is None else argv)
+    config = parser.parse_known_args(argv)[0].config
+    if not config:
+        return parser.parse_args(argv)
+    # Later occurrences win in argparse, so the command line overrides the settings file.
+    return parser.parse_args(settings_argv(parser, config) + argv)
+
+
 def main(argv: Optional[Sequence[str]] = None) -> None:
-    args = build_parser().parse_args(argv)
+    args = parse_args(build_parser(), argv)
     sink = split_protocol_stdout()
     session = build_session(args)
     if args.monitor_port:
         from .monitor import start_in_background
 
-        start_in_background(Path(args.output_root), args.monitor_port)
+        start_in_background(Path(args.output_root).expanduser(), args.monitor_port)
     try:
         serve_stdio(session, stdout=sink)
     finally:
@@ -994,6 +1050,7 @@ __all__ = [
     "serve_stdio",
     "split_protocol_stdout",
     "main",
+    "parse_args",
 ]
 
 

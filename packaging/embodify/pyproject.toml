@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "embodify"
-version = "0.1.0a1"
+version = "0.1.0a2"
 description = "Embodify: give your agent a body. Installs the embodify-mcp package."
 readme = "README.md"
 authors = [{name = "Yida Yang"}]
 requires-python = ">=3.8"
 license = {text = "Apache-2.0"}
-dependencies = ["embodify-mcp==0.1.0a1"]
+dependencies = ["embodify-mcp==0.1.0a2"]
 classifiers = ["Development Status :: 3 - Alpha", "Programming Language :: Python :: 3"]
 
 [project.urls]

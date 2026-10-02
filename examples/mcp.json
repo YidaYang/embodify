@@ -1,10 +1,13 @@
 {
   "mcpServers": {
     "embodify": {
-      "command": "embodify-mcp",
+      "command": "uvx",
       "args": [
-        "--backend",
-        "fake"
+        "--from",
+        "embodify-mcp",
+        "embodify-mcp",
+        "--config",
+        "~/.embodify/config.json"
       ]
     }
   }

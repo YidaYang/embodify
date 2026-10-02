@@ -1,0 +1,20 @@
+{
+  "name": "embodify",
+  "displayName": "Embodify",
+  "version": "0.1.0a2",
+  "description": "Give your agent a body: the Embodify MCP server for observing and controlling robots, plus skills for operating them and improving from experience.",
+  "author": {
+    "name": "Yida Yang"
+  },
+  "homepage": "https://github.com/YidaYang/embodify",
+  "repository": "https://github.com/YidaYang/embodify",
+  "license": "Apache-2.0",
+  "keywords": [
+    "robotics",
+    "embodied-ai",
+    "mcp",
+    "skills",
+    "manipulation",
+    "embodify"
+  ]
+}

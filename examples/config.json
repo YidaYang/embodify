@@ -1,0 +1,5 @@
+{
+  "backend": "remote",
+  "remote-config": "libero-local.json",
+  "monitor-port": 8765
+}

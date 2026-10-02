@@ -68,17 +68,17 @@ A general agent with a body is stronger than a harness that can only move a robo
 
 ## What's inside
 
-Embodify is an agent plugin with two parts:
+Embodify is an agent plugin with two parts, and installing the plugin gives your agent both:
 
 | Part | What it gives your agent |
 |---|---|
 | **MCP server** (`embodify-mcp`, registered as `embodify`) | Tools to list tasks, start an episode, observe cameras and robot state, move end effectors, open and close grippers, and coordinate two arms. |
-| **Skills** (`embodify-skills`) | Know-how: running a careful observe–act loop, keeping a profile of the robot body and cameras, and learning from past episodes. More perception skills are coming soon. |
+| **Skills** | Know-how: running a careful observe–act loop, keeping a profile of the robot body and cameras, and learning from past episodes. More perception skills are coming soon. |
 
 ```mermaid
 flowchart LR
   A["Your agent<br/>Claude Code · Codex · …"] -- "MCP (stdio)" --> B["embodify-mcp<br/>episodes · budgets · logs"]
-  K["embodify-skills"] -. "loaded by" .-> A
+  K["Embodify skills"] -. "loaded by" .-> A
   B --> I["Backend interface"]
   I --> L["LIBERO"]
   I --> R["RoboDojo"]
@@ -150,48 +150,38 @@ Paste this into Claude Code, Codex or any other agent you use:
 Install Embodify (https://github.com/YidaYang/embodify) for yourself, then set up a LIBERO environment or connect to my existing simulator.
 ```
 
-That's it. Your agent installs the MCP server and skills into its own
-configuration, sets up the simulator and tells you when to restart the session.
+That's it. Your agent installs the Embodify plugin, sets up the simulator and
+tells you when to restart the session.
 (Agents: follow the [agent setup guide](docs/agent-setup.md).)
 
 ### Manual install
 
-Requires Python 3.8+ (3.10+ recommended for the host side).
-
-```sh
-git clone https://github.com/YidaYang/embodify.git
-cd embodify
-python -m pip install .
-embodify-mcp-smoke            # end-to-end check: no simulator, GPU or model needed
-```
-
-Then register the MCP server as `embodify` and install the `embodify-skills`
-pack in your agent. The commands below start on the Fake backend, so you can try
-the tools right away; [connect a real simulator](#connect-a-real-simulator) next.
+Embodify starts its MCP server with [uv](https://docs.astral.sh/uv/), straight
+from PyPI. If you do not have uv yet, install it with `python -m pip install uv`
+or the [official installer](https://docs.astral.sh/uv/getting-started/installation/).
 
 ### Claude Code
 
 ```sh
-claude mcp add --scope user embodify -- embodify-mcp --backend fake
 claude plugin marketplace add YidaYang/embodify
-claude plugin install embodify-skills@embodify
+claude plugin install embodify@embodify
 ```
 
 ### Codex
 
 ```sh
-codex mcp add embodify -- embodify-mcp --backend fake
 codex plugin marketplace add YidaYang/embodify
-codex plugin add embodify-skills@embodify
+codex plugin add embodify@embodify
 ```
 
-Simulators can take minutes to start, so give the server generous timeouts in
-`~/.codex/config.toml`:
+The plugin brings both the MCP server, registered as `embodify`, and the skills.
+The server starts on the Fake backend, so you can try the tools right away;
+[connect a real simulator](#connect-a-real-simulator) next. It reads its
+settings from `~/.embodify/config.json` (see [backend setup](docs/backends.md)).
+To check the package on its own, without an agent:
 
-```toml
-[mcp_servers.embodify]
-startup_timeout_sec = 120
-tool_timeout_sec = 900
+```sh
+uvx --from embodify-mcp embodify-mcp-smoke   # end-to-end check: no simulator, GPU or model needed
 ```
 
 ### Other agents
@@ -199,7 +189,7 @@ tool_timeout_sec = 900
 1. Register the server in your agent's MCP configuration using
    [examples/mcp.json](examples/mcp.json).
 2. If your agent supports Agent Skills (`SKILL.md` folders), copy or link the
-   folders in [embodify-skills/skills/](embodify-skills/skills/) into its skills directory.
+   folders in [plugin/skills/](plugin/skills/) into its skills directory.
 
 Restart the session, then ask your agent something like *"Reset the task,
 describe what the cameras show, then raise the gripper 5 cm."*
@@ -212,19 +202,19 @@ Let your agent do this step. Paste:
 Connect Embodify to a real simulator for me: set up LIBERO on this machine, or connect to my existing simulator. Follow https://github.com/YidaYang/embodify/blob/main/docs/agent-setup.md.
 ```
 
-Your agent installs the simulator or connects to yours over SSH, points the
-`embodify` server at it and asks you to restart the session. To do it by hand,
-see [backend setup](docs/backends.md).
+Your agent installs the simulator or connects to yours over SSH, writes the
+server settings to `~/.embodify/config.json` and asks you to restart the
+session. To do it by hand, see [backend setup](docs/backends.md).
 
 ### Watch robots live and replay episodes
 
-Add `--monitor-port 8765` to the server command and open http://127.0.0.1:8765
-to watch the robot work live, with every camera view, the robot state and each
-tool call your agent makes, or to replay any past episode frame by frame. To
-browse saved runs without a running server:
+Add `"monitor-port": 8765` to `~/.embodify/config.json` and open
+http://127.0.0.1:8765 to watch the robot work live, with every camera view,
+the robot state and each tool call your agent makes, or to replay any past
+episode frame by frame. To browse saved runs without a running server:
 
 ```sh
-embodify-mcp-monitor --root out/mcp
+uvx --from embodify-mcp embodify-mcp-monitor   # reads ~/.embodify/runs
 ```
 
 The monitor listens on localhost only.
@@ -247,15 +237,15 @@ Frames and stop reasons are defined in the [action contract](docs/action-contrac
 
 ## Skills
 
-The `embodify-skills` pack contains:
+The plugin contains these skills:
 
 | Skill | Status | What it does |
 |---|---|---|
-| [embodied-control](embodify-skills/skills/embodied-control/SKILL.md) | v0 | The observe–act loop: small moves, reading stop reasons, verifying grasps, releasing in a separate call |
-| [robot-profile](embodify-skills/skills/robot-profile/SKILL.md) | v0 | Keep a profile of the robot: arms, cameras, frames, calibration and measured behavior |
-| [task-experience](embodify-skills/skills/task-experience/SKILL.md) | v0 | Write a lesson after every episode, read relevant lessons before the next, promote repeated lessons to rules |
-| [object-segmentation](embodify-skills/skills/object-segmentation/SKILL.md) | Coming soon | Open-vocabulary segmentation of camera images |
-| [depth-ranging](embodify-skills/skills/depth-ranging/SKILL.md) | Coming soon | Pixel to 3D position from depth and calibration |
+| [embodied-control](plugin/skills/embodied-control/SKILL.md) | v0 | The observe–act loop: small moves, reading stop reasons, verifying grasps, releasing in a separate call |
+| [robot-profile](plugin/skills/robot-profile/SKILL.md) | v0 | Keep a profile of the robot: arms, cameras, frames, calibration and measured behavior |
+| [task-experience](plugin/skills/task-experience/SKILL.md) | v0 | Write a lesson after every episode, read relevant lessons before the next, promote repeated lessons to rules |
+| [object-segmentation](plugin/skills/object-segmentation/SKILL.md) | Coming soon | Open-vocabulary segmentation of camera images |
+| [depth-ranging](plugin/skills/depth-ranging/SKILL.md) | Coming soon | Pixel to 3D position from depth and calibration |
 
 Skills are grouped into three families that will keep growing:
 
