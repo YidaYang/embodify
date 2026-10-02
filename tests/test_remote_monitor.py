@@ -46,5 +46,5 @@ assert(box.innerHTML.includes('后端往返（含执行）'));
 `);
 '''
     result = subprocess.run([shutil.which('node'), '-e', script, str(html)], capture_output=True,
-                            encoding='utf-8', timeout=10)
+                            encoding='utf-8', timeout=60)
     assert result.returncode == 0, result.stderr

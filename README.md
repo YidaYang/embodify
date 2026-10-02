@@ -1,4 +1,5 @@
 <h1 align="center">Embodify</h1>
+<!-- mcp-name: io.github.YidaYang/embodify -->
 
 <p align="center"><b>Give your agent a body.</b></p>
 
