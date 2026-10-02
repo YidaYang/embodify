@@ -6,6 +6,7 @@ authors:
   - family-names: Yang
     given-names: Yida
 version: 0.1.0a1
+date-released: 2026-10-02
 license: Apache-2.0
 repository-code: "https://github.com/YidaYang/embodify"
 url: "https://github.com/YidaYang/embodify"
