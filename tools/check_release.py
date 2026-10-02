@@ -30,6 +30,8 @@ def patterns():
 def versions():
     """Every place that carries the package version, so a release cannot publish them out of step."""
     def find(path, pattern):
+        if not (ROOT / path).is_file():
+            return None
         match = re.search(pattern, (ROOT / path).read_text(encoding="utf-8"), re.M)
         return match.group(1) if match else None
     server = json.loads((ROOT / "server.json").read_text(encoding="utf-8"))
@@ -79,7 +81,7 @@ def check():
                 if not (p.parent / path).exists():
                     issues.append(str(rel) + ": broken link " + target)
     for required in ("LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md", "README.md", "pyproject.toml",
-                     "embodify_mcp/monitor_page.html"):
+                     "embodify_mcp/monitor_page.html", "plugin/.mcp.json"):
         if not (ROOT / required).is_file():
             issues.append("Missing " + required)
     server_name, found = versions()

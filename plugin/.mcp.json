@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "embodify": {
+      "command": "uvx",
+      "args": ["--from", "embodify-mcp==0.1.0a2", "embodify-mcp", "--config", "~/.embodify/config.json"],
+      "startup_timeout_sec": 120,
+      "tool_timeout_sec": 900
+    }
+  }
+}

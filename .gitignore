@@ -13,7 +13,7 @@ out/
 *.local.toml
 .codex/
 .claude/
-.mcp.json
+/.mcp.json
 *.pem
 *.key
 *.safetensors
